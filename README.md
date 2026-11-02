@@ -27,14 +27,16 @@ SIMBAR adalah aplikasi untuk mengelola barang inventaris dan proses peminjaman. 
 
 ## 🚀 Fitur utama
 
-- **Inventaris:** tambah, ubah, dan kelola stok barang.
-- **Foto produk:** unggah foto JPG, PNG, atau WebP (maksimal 5 MB), lalu tampilkan pada katalog barang.
+- **Inventaris:** tambah, ubah, dan kelola stok barang; arsipkan barang tanpa menghapus foto atau riwayat transaksinya, lalu pulihkan bila diperlukan.
+- **Foto produk:** unggah JPG, PNG, atau WebP (maksimal 5 MB) dari perangkat atau ambil dari tautan HTTPS langsung ke gambar publik, lalu tampilkan pada katalog barang.
 - **Peminjaman:** ajukan barang berdasarkan ketersediaan stok dan pantau riwayat serta status pengajuan.
 - **Pengelolaan transaksi:** petugas dan admin dapat mencari, memfilter, dan memperbarui status peminjaman.
 - **Pengelolaan akun:** admin dapat mengatur pengguna dan perannya.
+- **Log aktivitas admin:** rekam perubahan transaksi, barang, dan akun, serta login/logout staf. Log bisa dicari dan difilter dari menu admin.
 - **Profil akun:** ubah informasi profil dan kata sandi.
 - **Ekspor laporan:** unduh daftar peminjaman sebagai CSV.
 - **Akses berbasis peran:** halaman dan tindakan dibatasi sesuai peran pengguna.
+- **Ingat saya:** pilihan login persisten hingga 30 hari pada perangkat yang dipercaya; keluar akan mencabut token perangkat tersebut.
 - **Tampilan responsif:** halaman inventaris dan dashboard dirancang agar tetap nyaman digunakan di layar kecil.
 
 ## 👥 Jenis pengguna
@@ -73,14 +75,20 @@ Pastikan XAMPP (Apache dan MySQL) sudah terpasang dan berjalan.
 
 3. **Impor skema dan data awal** dengan memilih database tersebut, lalu mengimpor [`database/db_simbar.sql`](database/db_simbar.sql).
 
-   Jika database sudah lama dan kolom foto belum tersedia, jalankan migrasi satu kali:
+   Jika database sudah lama, jalankan migrasi yang belum diterapkan satu kali. Untuk kolom foto:
 
    ```sql
    ALTER TABLE barang
    ADD COLUMN foto VARCHAR(255) DEFAULT NULL AFTER kategori;
    ```
 
-   Skrip migrasi juga tersedia di [`database/migrasi_foto_barang.sql`](database/migrasi_foto_barang.sql). Jangan jalankan jika kolom `foto` sudah ada.
+   Skrip migrasi tersedia di [`database/migrasi_foto_barang.sql`](database/migrasi_foto_barang.sql). Jangan jalankan jika kolom `foto` sudah ada.
+
+   Untuk fitur arsip barang, jalankan [`database/migrasi_arsip_barang.sql`](database/migrasi_arsip_barang.sql) jika kolom `diarsipkan` belum ada. Migrasi ini menandai semua barang yang sudah ada sebagai aktif.
+
+   Untuk database lama, jalankan [`database/migrasi_ingat_saya.sql`](database/migrasi_ingat_saya.sql) satu kali untuk membuat tabel token fitur “Ingat saya”.
+
+   Untuk database lama, jalankan [`database/migrasi_audit_log.sql`](database/migrasi_audit_log.sql) satu kali untuk membuat tabel jejak aktivitas admin.
 
 4. **Periksa koneksi database** di [`config/koneksi.php`](config/koneksi.php). Sesuaikan host, nama database, username, dan password dengan konfigurasi lokalmu.
 
@@ -94,7 +102,7 @@ Pastikan XAMPP (Apache dan MySQL) sudah terpasang dan berjalan.
 
 ### Upload foto
 
-Foto produk disimpan di `uploads/barang/`. Pastikan Apache/PHP memiliki izin untuk membuat dan menulis file di folder tersebut. Format selain JPG, PNG, dan WebP, serta file lebih dari 5 MB, akan ditolak.
+Foto produk disimpan di `uploads/barang/`. Pastikan Apache/PHP memiliki izin untuk membuat dan menulis file di folder tersebut. Format selain JPG, PNG, dan WebP, serta file lebih dari 5 MB, akan ditolak. Untuk sumber internet, gunakan URL HTTPS langsung ke file gambar publik, bukan tautan halaman produk.
 
 ## 🗂️ Struktur proyek
 

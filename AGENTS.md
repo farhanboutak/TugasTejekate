@@ -9,7 +9,7 @@ SIMBAR adalah aplikasi web sederhana untuk mengelola inventaris barang dan trans
 - Backend: PHP native, tanpa framework.
 - Database: MySQL/MariaDB, database bernama `db_simbar`.
 - Koneksi database menggunakan PDO dan session PHP.
-- Impor skema serta data awal dari `database/db_simbar.sql` melalui phpMyAdmin. Untuk database lama, jalankan satu kali `database/migrasi_foto_barang.sql` agar kolom `barang.foto` tersedia.
+- Impor skema serta data awal dari `database/db_simbar.sql` melalui phpMyAdmin. Untuk database lama, jalankan migrasi yang belum diterapkan: `database/migrasi_foto_barang.sql` untuk kolom `barang.foto` dan `database/migrasi_arsip_barang.sql` untuk `barang.diarsipkan`.
 - Jalankan proyek lewat Apache XAMPP dan buka `index.php` di browser.
 - Konfigurasi koneksi lokal berada di `config/koneksi.php`. Jangan menambahkan kredensial database ke file lain atau dokumentasi.
 - Belum ada konfigurasi dependency manager, framework, maupun test suite otomatis. Untuk validasi file PHP, gunakan `php -l` jika PHP CLI tersedia.
@@ -17,31 +17,34 @@ SIMBAR adalah aplikasi web sederhana untuk mengelola inventaris barang dan trans
 ## Struktur dan Alur Aplikasi
 
 - `index.php`: landing page publik; tombol masuk mengarah ke `login.php`.
-- `login.php`: formulir login dan mode registrasi melalui `?mode=register`; pesan hasil ditampilkan dari parameter `pesan`.
-- `login_proses.php`: mencari user berdasarkan username, memverifikasi password dengan `password_verify()`, menyimpan identitas dan role dalam session, lalu mengarahkan user berdasarkan role (`admin` ke `admin/index.php`, `petugas` ke `petugas/index.php`, `peminjam` ke `peminjaman/index.php`).
+- `login.php`: formulir login dengan opsi ingat saya dan mode registrasi melalui `?mode=register`; pesan hasil ditampilkan dari parameter `pesan`.
+- `login_proses.php`: memvalidasi CSRF, memverifikasi password dengan `password_verify()`, membuat session, dan jika dipilih menerbitkan token ingat saya dengan masa berlaku 30 hari.
+- `config/remember_me.php`: membuat, memutar, memulihkan, dan mencabut token ingat saya; cookie `HttpOnly`, `SameSite=Lax`, dan `Secure` ketika HTTPS. Hanya hash token yang disimpan di tabel `remember_tokens`.
 - `register_proses.php`: validasi dan pembuatan akun baru dengan role tetap `peminjam`, password hash `password_hash()`, dan perlindungan CSRF.
 - `peminjaman/index.php`: halaman khusus role `peminjam` untuk mengirim pengajuan peminjaman berstatus `Pending` dan melihat riwayat akun. Pengajuan memeriksa stok yang tersedia setelah mengurangi jumlah transaksi berstatus `Pending` atau `Disetujui`.
 - `peminjaman/index.php` juga menampilkan pembaruan status terkini dari transaksi peminjam serta menyediakan tautan profil akun.
 - `petugas/index.php`: dashboard role `petugas` untuk mencari/filter semua transaksi serta menyetujui, menolak, atau menandai transaksi disetujui sebagai dikembalikan.
-- `admin/barang.php` dan `admin/barang_aksi.php`: inventaris CRUD untuk admin/petugas; stok tidak boleh dikurangi di bawah jumlah transaksi Pending/Disetujui, barang yang sudah memiliki riwayat transaksi tidak dapat dihapus, dan foto barang dapat diunggah atau diganti.
-- Foto inventaris disimpan di `uploads/barang/` dengan nama acak; hanya JPG, PNG, dan WebP hingga 5 MB yang diterima. Form admin menampilkan pratinjau dan pengguna melihat foto pada katalog di `peminjaman/index.php`.
+- `admin/barang.php` dan `admin/barang_aksi.php`: pengelolaan inventaris untuk admin/petugas; stok tidak boleh dikurangi di bawah jumlah transaksi Pending/Disetujui, barang dapat diarsipkan atau dipulihkan tanpa menghapus transaksi/foto, dan foto barang dapat diunggah atau diganti. Daftar katalog peminjaman hanya menampilkan barang aktif.
+- Foto inventaris disimpan di `uploads/barang/` dengan nama acak; hanya JPG, PNG, dan WebP hingga 5 MB yang diterima. Form admin menampilkan pratinjau dan dapat mengambil foto dari perangkat atau URL HTTPS publik langsung ke file gambar; URL diunduh pada server dengan pembatasan alamat publik, tanpa redirect, lalu divalidasi sebagai gambar. Pengguna melihat foto pada katalog di `peminjaman/index.php`.
 - `admin/ekspor_peminjaman.php`: ekspor CSV transaksi dengan filter status, rentang tanggal pinjam, dan pencarian; nilai teks CSV dinetralkan agar tidak dieksekusi sebagai formula spreadsheet.
 - `admin/aksi_status.php`: endpoint POST perubahan status yang digunakan admin maupun petugas; validasi transisi status dan CSRF, lalu kembali ke dashboard sesuai role.
 - `admin/hapus.php`: endpoint hapus transaksi admin-only dengan metode POST dan CSRF.
 - `admin/pengguna.php`: halaman admin untuk membuat, melihat, mengubah nama/username/role, mereset password, dan menghapus akun yang tidak memiliki transaksi.
 - `admin/pengguna_aksi.php`: endpoint POST pengelolaan akun; akses admin-only, CSRF, validasi input, hash password, dan perlindungan akun admin terakhir.
+- `admin/log.php`: halaman admin-only untuk mencari dan memfilter jejak login staf serta perubahan transaksi, barang, dan pengguna.
+- `config/audit.php`: menulis log aktivitas dengan snapshot nama/role pelaku, metadata perubahan non-rahasia, alamat IP, dan waktu; jangan pernah memasukkan password atau token ke metadata.
 - `akun.php`: profil bersama semua role untuk memperbarui nama/username dan opsional password; perubahan memerlukan password saat ini.
-- `config/koneksi.php`: membuat koneksi PDO ke database dan memulai session.
+- `config/koneksi.php`: membuat koneksi PDO, memulai session dengan cookie yang aman, lalu memulihkan login dari token ingat saya bila session sudah berakhir.
 - `config/auth.php`: fungsi `cek_akses($allowed_roles)` untuk memeriksa session login dan role.
-- `admin/index.php`: dashboard admin dengan ringkasan, filter transaksi responsif, tautan pengelolaan, dan thumbnail foto barang.
-- `logout.php`: menghapus session dan mengarahkan user kembali ke halaman login.
+- `admin/index.php`: dashboard admin dengan ringkasan, filter transaksi responsif, tautan pengelolaan, aktivitas terbaru, dan thumbnail foto barang.
+- `logout.php`: mencabut token ingat saya pada perangkat tersebut, menghapus session, dan mengarahkan user kembali ke halaman login.
 - `update_password.php`: skrip utilitas yang langsung mengubah password admin; jangan menjalankannya tanpa persetujuan eksplisit dan jangan mengeksposnya sebagai endpoint publik.
-- `database/db_simbar.sql`: definisi dan data awal untuk tabel `users`, `barang`, dan `peminjaman`.
+- `database/db_simbar.sql`: definisi dan data awal untuk tabel `users`, `barang`, `peminjaman`, `remember_tokens`, dan `audit_logs`. Database lama perlu menjalankan migrasi `database/migrasi_ingat_saya.sql` dan `database/migrasi_audit_log.sql` satu kali jika tabel terkait belum tersedia.
 
 Skema utama:
 
 - `users`: nama, username, hash password, dan role (`admin`, `petugas`, `peminjam`).
-- `barang`: nama barang, kategori, foto opsional, stok, dan kondisi.
+- `barang`: nama barang, kategori, foto opsional, status arsip (`diarsipkan`), stok, dan kondisi.
 - `peminjaman`: peminjam, barang, tanggal pinjam/kembali, jumlah, dan status (`Pending`, `Disetujui`, `Ditolak`, `Dikembalikan`).
 
 ## Status Implementasi yang Perlu Diingat

@@ -12,10 +12,21 @@ try {
     // Set error mode PDO ke exception agar mudah mendebug jika ada error query
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Aktifkan session jika belum aktif (berguna untuk fitur login nanti)
+    // Keep the session cookie limited to the browser session; persistent login uses a separate token.
     if (session_status() === PHP_SESSION_NONE) {
+        $https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== '' && strtolower((string)$_SERVER['HTTPS']) !== 'off';
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'secure' => $https,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
         session_start();
     }
+
+    require_once __DIR__ . '/remember_me.php';
+    remember_restore_session($pdo);
     
 } catch (PDOException $e) {
     // Jika koneksi gagal

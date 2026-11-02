@@ -57,6 +57,21 @@
             gap: 24px;
         }
 
+        .menu-toggle {
+            display: none;
+            min-width: 42px;
+            min-height: 42px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--white);
+            color: var(--brand);
+            cursor: pointer;
+            font: inherit;
+            font-size: 19px;
+        }
+
         .brand {
             display: inline-flex;
             align-items: center;
@@ -470,9 +485,26 @@
                 min-height: 68px;
             }
 
+            .navbar { position: relative; flex-wrap: wrap; gap: 10px; padding: 11px 0; }
+            .brand { margin-right: auto; }
+            .menu-toggle { display: inline-flex; order: 2; }
+            .navbar > .button { order: 3; }
             .nav-links {
                 display: none;
+                order: 4;
+                width: 100%;
+                align-items: stretch;
+                flex-direction: column;
+                gap: 2px;
+                padding: 8px;
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                background: var(--white);
+                box-shadow: 0 12px 28px rgba(29,55,62,.09);
             }
+            .nav-links.open { display: flex; }
+            .nav-links a { padding: 10px 12px; border-radius: 8px; }
+            .nav-links a:hover { background: var(--mint); }
 
             .navbar > .button {
                 min-height: 41px;
@@ -558,11 +590,14 @@
                 </span>
                 <span>SIMBAR</span>
             </a>
-            <div class="nav-links">
+            <div class="nav-links" id="main-nav">
                 <a href="#beranda">Beranda</a>
                 <a href="#fitur">Fitur</a>
                 <a href="#tentang">Tentang</a>
             </div>
+            <button class="menu-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false" aria-controls="main-nav" id="menuToggle">
+                <span aria-hidden="true">☰</span>
+            </button>
             <a class="button" href="login.php">Masuk ke aplikasi</a>
         </nav>
     </header>
@@ -670,5 +705,24 @@
             <p>&copy; <?= date('Y'); ?> SIMBAR. Dibuat untuk pengelolaan yang lebih tertata.</p>
         </div>
     </footer>
+<script>
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNav = document.getElementById('main-nav');
+
+    menuToggle.addEventListener('click', () => {
+        const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
+        menuToggle.setAttribute('aria-expanded', String(!isExpanded));
+        menuToggle.setAttribute('aria-label', isExpanded ? 'Buka navigasi' : 'Tutup navigasi');
+        mainNav.classList.toggle('open', !isExpanded);
+    });
+
+    mainNav.addEventListener('click', (event) => {
+        if (event.target.closest('a')) {
+            menuToggle.setAttribute('aria-expanded', 'false');
+            menuToggle.setAttribute('aria-label', 'Buka navigasi');
+            mainNav.classList.remove('open');
+        }
+    });
+</script>
 </body>
 </html>

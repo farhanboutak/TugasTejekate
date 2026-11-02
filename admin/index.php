@@ -13,6 +13,8 @@ $data_peminjaman = [];
 $error_message   = null;
 $total_barang = 0;
 $total_pengguna = 0;
+$aktivitas_terbaru = [];
+$audit_error = null;
 
 try {
     $sql = "SELECT peminjaman.id, users.nama AS nama_peminjam, barang.nama_barang, barang.foto,
@@ -24,10 +26,22 @@ try {
             ORDER BY peminjaman.id DESC";
     $stmt = $pdo->query($sql);
     $data_peminjaman = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $total_barang = (int)$pdo->query('SELECT COUNT(*) FROM barang')->fetchColumn();
+    $total_barang = (int)$pdo->query('SELECT COUNT(*) FROM barang WHERE diarsipkan = 0')->fetchColumn();
     $total_pengguna = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 } catch (PDOException $e) {
     $error_message = "Gagal memuat data peminjaman. Silakan coba lagi.";
+}
+
+try {
+    $aktivitas_terbaru = $pdo->query(
+        'SELECT actor_name, actor_role, entity, action, summary, created_at
+         FROM audit_logs
+         ORDER BY id DESC
+         LIMIT 6'
+    )->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('SIMBAR dashboard audit query failed: ' . $e->getMessage());
+    $audit_error = 'Log aktivitas belum tersedia. Jalankan migrasi audit log untuk mengaktifkannya.';
 }
 
 $total     = count($data_peminjaman);
@@ -232,7 +246,7 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
 
         .quick-links {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 12px;
             margin: -8px 0 22px;
         }
@@ -261,6 +275,34 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
         }
         .quick-link strong { display: block; font-size: 13px; }
         .quick-link small { color: var(--muted); font-size: 11px; }
+
+        .activity-panel {
+            overflow: hidden;
+            margin: 0 0 22px;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: var(--white);
+            box-shadow: 0 8px 24px rgba(29,55,62,.045);
+        }
+        .activity-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 19px;
+            border-bottom: 1px solid var(--line);
+        }
+        .activity-heading h2 { margin: 0; font-size: 1rem; font-weight: 750; }
+        .activity-heading p { margin: 2px 0 0; color: var(--muted); font-size: .75rem; }
+        .activity-heading a { color: var(--brand); font-size: .78rem; font-weight: 750; }
+        .activity-list { display: grid; }
+        .activity-item { display: grid; grid-template-columns: 35px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 12px 19px; border-bottom: 1px solid #eef1ed; }
+        .activity-item:last-child { border-bottom: 0; }
+        .activity-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: var(--mint); color: var(--brand); }
+        .activity-summary { color: var(--ink); font-size: .78rem; font-weight: 650; }
+        .activity-meta,.activity-time { color: var(--muted); font-size: .68rem; }
+        .activity-time { text-align: right; white-space: nowrap; }
+        .activity-empty { padding: 20px; color: var(--muted); font-size: .8rem; text-align: center; }
 
         .filter-card {
             padding: 16px !important;
@@ -393,7 +435,17 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
         }
 
         @media (max-width: 767.98px) {
-            .navbar-custom .container { min-height: 64px; }
+            .navbar-custom .container {
+                min-height: 64px;
+                flex-wrap: wrap;
+                padding-top: .45rem;
+                padding-bottom: .45rem;
+            }
+            .navbar-custom .container > .d-flex {
+                flex: 1 1 100%;
+                justify-content: space-between;
+                overflow-x: auto;
+            }
             .admin-heading { align-items: flex-start; }
         }
 
@@ -417,8 +469,12 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             .stat-label { font-size: .64rem; }
             .filter-card { padding: 12px !important; }
             .quick-links { gap: 8px; }
+            .quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .quick-link { align-items: flex-start; padding: 12px; }
             .quick-link-icon { width: 33px; height: 33px; }
+            .activity-item { grid-template-columns: 32px minmax(0,1fr); padding: 11px 13px; }
+            .activity-time { grid-column: 2; text-align: left; }
+            .activity-heading { padding: 14px; }
             .table-responsive { overflow: visible; }
             .table-card .table { display: block; }
             .table-card thead { display: none; }
@@ -482,6 +538,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             </a>
             <a href="barang.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola inventaris">
                 <i class="bi bi-box-seam me-1"></i><span class="nav-label">Inventaris</span>
+            </a>
+            <a href="log.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Log aktivitas">
+                <i class="bi bi-clock-history me-1"></i><span class="nav-label">Log</span>
             </a>
             <a href="../akun.php" class="btn btn-sm btn-outline-light rounded-pill px-3">
                 <i class="bi bi-person-gear me-1"></i><span class="d-none d-md-inline">Profil</span>
@@ -589,7 +648,47 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             <span class="quick-link-icon"><i class="bi bi-people"></i></span>
             <span><strong>Kelola pengguna</strong><small><?= $total_pengguna ?> akun terdaftar</small></span>
         </a>
+        <a class="quick-link" href="log.php">
+            <span class="quick-link-icon"><i class="bi bi-clock-history"></i></span>
+            <span><strong>Log aktivitas</strong><small>Lihat jejak perubahan admin</small></span>
+        </a>
     </div>
+
+    <section class="activity-panel" aria-labelledby="activity-title">
+        <div class="activity-heading">
+            <div><h2 id="activity-title">Aktivitas terbaru</h2><p>Jejak tindakan admin dan petugas</p></div>
+            <a href="log.php">Lihat semua <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <?php if ($audit_error): ?>
+            <div class="activity-empty"><?= htmlspecialchars($audit_error, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php elseif (!$aktivitas_terbaru): ?>
+            <div class="activity-empty">Belum ada aktivitas yang tercatat.</div>
+        <?php else: ?>
+            <div class="activity-list">
+                <?php foreach ($aktivitas_terbaru as $aktivitas): ?>
+                    <?php
+                    $ikonAktivitas = [
+                        'auth' => 'bi-shield-check',
+                        'transaksi' => 'bi-arrow-left-right',
+                        'barang' => 'bi-box-seam',
+                        'pengguna' => 'bi-person-gear',
+                    ][$aktivitas['entity']] ?? 'bi-activity';
+                    $waktuAktivitas = strtotime($aktivitas['created_at']);
+                    ?>
+                    <article class="activity-item">
+                        <span class="activity-icon" aria-hidden="true"><i class="bi <?= htmlspecialchars($ikonAktivitas, ENT_QUOTES, 'UTF-8') ?>"></i></span>
+                        <div>
+                            <div class="activity-summary"><?= htmlspecialchars($aktivitas['summary'], ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="activity-meta"><?= htmlspecialchars($aktivitas['actor_name'], ENT_QUOTES, 'UTF-8') ?> · <?= htmlspecialchars(ucfirst($aktivitas['actor_role']), ENT_QUOTES, 'UTF-8') ?></div>
+                        </div>
+                        <time class="activity-time"<?= $waktuAktivitas ? ' datetime="' . htmlspecialchars(date(DATE_ATOM, $waktuAktivitas), ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
+                            <?= $waktuAktivitas ? htmlspecialchars(date('d M Y, H:i', $waktuAktivitas), ENT_QUOTES, 'UTF-8') : htmlspecialchars($aktivitas['created_at'], ENT_QUOTES, 'UTF-8') ?>
+                        </time>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </section>
 
     <div class="filter-card p-3 mb-3 shadow-sm">
         <div class="row g-2 align-items-center">

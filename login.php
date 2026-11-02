@@ -1,7 +1,5 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once 'config/koneksi.php';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -11,6 +9,8 @@ $is_register = isset($_GET['mode']) && $_GET['mode'] === 'register';
 $pesan = isset($_GET['pesan']) && is_string($_GET['pesan']) ? $_GET['pesan'] : '';
 $notifikasi = [
     'gagal' => ['error', 'Login belum berhasil', 'Username atau password yang kamu masukkan salah.'],
+    'login_csrf' => ['error', 'Sesi formulir kedaluwarsa', 'Muat ulang halaman, lalu coba masuk kembali.'],
+    'sistem' => ['error', 'Login belum dapat diproses', 'Terjadi kendala sementara. Silakan coba beberapa saat lagi.'],
     'daftar_sukses' => ['success', 'Pendaftaran berhasil', 'Akun kamu sudah dibuat. Silakan masuk menggunakan akun tersebut.'],
     'username_terpakai' => ['error', 'Username sudah digunakan', 'Silakan pilih username lain.'],
     'daftar_invalid' => ['error', 'Data belum valid', 'Periksa kembali nama, username, dan password yang kamu masukkan.'],
@@ -56,21 +56,32 @@ $notifikasi = [
             line-height: 1.55;
         }
 
+        body::before {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: linear-gradient(rgba(23, 42, 58, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(23, 42, 58, .025) 1px, transparent 1px);
+            background-size: 34px 34px;
+            content: "";
+            mask-image: linear-gradient(to bottom, black, transparent 80%);
+            pointer-events: none;
+        }
+
         a {
             color: inherit;
             text-decoration: none;
         }
 
         .login-layout {
-            width: min(940px, 100%);
-            min-height: 570px;
+            width: min(1000px, 100%);
+            min-height: 600px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.03fr .97fr;
             overflow: hidden;
-            border: 1px solid rgba(23, 42, 58, .08);
-            border-radius: 22px;
+            border: 1px solid rgba(23, 42, 58, .09);
+            border-radius: 24px;
             background: var(--white);
-            box-shadow: 0 25px 80px rgba(29, 55, 62, .12);
+            box-shadow: 0 30px 90px rgba(29, 55, 62, .14), 0 4px 12px rgba(29, 55, 62, .04);
         }
 
         .intro {
@@ -79,8 +90,8 @@ $notifikasi = [
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 36px;
-            background: var(--brand);
+            padding: 42px;
+            background: linear-gradient(145deg, #146b68 0%, #105653 100%);
             color: var(--white);
         }
 
@@ -136,7 +147,7 @@ $notifikasi = [
         .intro-copy {
             position: relative;
             z-index: 1;
-            max-width: 360px;
+            max-width: 390px;
             margin: 0 0 20px;
         }
 
@@ -160,6 +171,52 @@ $notifikasi = [
             margin: 0;
             color: rgba(255, 255, 255, .78);
             font-size: 14px;
+            line-height: 1.75;
+        }
+
+        .intro-points {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .intro-point {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            color: rgba(255, 255, 255, .88);
+            font-size: 12px;
+        }
+
+        .intro-point-icon {
+            width: 30px;
+            height: 30px;
+            display: grid;
+            flex: 0 0 auto;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .18);
+            border-radius: 9px;
+            background: rgba(255, 255, 255, .1);
+            color: #d6f1e7;
+            font-size: 13px;
+        }
+
+        .secure-note {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            width: fit-content;
+            margin-top: 28px;
+            padding: 9px 12px;
+            border: 1px solid rgba(255, 255, 255, .16);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, .08);
+            color: rgba(255, 255, 255, .82);
+            font-size: 11px;
         }
 
         .intro-footer {
@@ -172,7 +229,7 @@ $notifikasi = [
         .form-panel {
             display: flex;
             align-items: center;
-            padding: 52px clamp(28px, 6vw, 65px);
+            padding: 50px clamp(34px, 5vw, 62px);
         }
 
         .form-content {
@@ -181,7 +238,7 @@ $notifikasi = [
 
         .form-content h2 {
             margin: 0 0 7px;
-            font-size: 29px;
+            font-size: 31px;
             letter-spacing: -.04em;
         }
 
@@ -216,7 +273,7 @@ $notifikasi = [
         }
 
         .field {
-            margin-bottom: 19px;
+            margin-bottom: 17px;
         }
 
         .field label {
@@ -229,7 +286,7 @@ $notifikasi = [
 
         .field input {
             width: 100%;
-            min-height: 48px;
+            min-height: 50px;
             padding: 0 14px;
             border: 1px solid #dfe5e3;
             border-radius: 9px;
@@ -275,22 +332,55 @@ $notifikasi = [
 
         .submit-button {
             width: 100%;
-            min-height: 49px;
-            margin-top: 5px;
+            min-height: 51px;
+            margin-top: 7px;
             border: 0;
-            border-radius: 9px;
-            background: var(--brand);
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
             color: var(--white);
             cursor: pointer;
             font: inherit;
             font-size: 14px;
             font-weight: 750;
-            transition: background .2s ease, transform .2s ease;
+            box-shadow: 0 8px 18px rgba(20, 107, 104, .16);
+            transition: box-shadow .2s ease, transform .2s ease, filter .2s ease;
         }
 
         .submit-button:hover {
             transform: translateY(-1px);
-            background: var(--brand-dark);
+            box-shadow: 0 11px 22px rgba(20, 107, 104, .22);
+            filter: brightness(.97);
+        }
+
+        .remember-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 1px 0 16px;
+        }
+
+        .remember-choice {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin: 0;
+            color: #526576;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .remember-choice input {
+            width: 17px;
+            height: 17px;
+            margin: 0;
+            accent-color: var(--brand);
+        }
+
+        .remember-hint {
+            color: #87949d;
+            font-size: 10px;
         }
 
         .back-link {
@@ -331,12 +421,12 @@ $notifikasi = [
                 max-width: 440px;
                 min-height: 0;
                 grid-template-columns: 1fr;
-                border-radius: 17px;
+                border-radius: 19px;
             }
 
             .intro {
-                min-height: 205px;
-                padding: 23px 25px;
+                min-height: 220px;
+                padding: 24px 25px;
             }
 
             .intro-copy {
@@ -350,7 +440,9 @@ $notifikasi = [
             }
 
             .intro-label,
-            .intro-footer {
+            .intro-footer,
+            .intro-points,
+            .secure-note {
                 display: none;
             }
 
@@ -366,6 +458,16 @@ $notifikasi = [
             .form-content h2 {
                 font-size: 25px;
             }
+
+            .remember-row {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 7px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
         }
     </style>
 </head>
@@ -385,7 +487,13 @@ $notifikasi = [
                 <p class="intro-label">Sistem Inventaris &amp; Peminjaman Barang</p>
                 <h1>Semua barang, lebih teratur.</h1>
                 <p>Kelola inventaris dan pantau peminjaman dalam satu tempat.</p>
+                <div class="intro-points" aria-label="Keunggulan SIMBAR">
+                    <div class="intro-point"><span class="intro-point-icon" aria-hidden="true">✓</span><span>Inventaris dan stok mudah dipantau</span></div>
+                    <div class="intro-point"><span class="intro-point-icon" aria-hidden="true">↗</span><span>Pengajuan dan status tersusun rapi</span></div>
+                    <div class="intro-point"><span class="intro-point-icon" aria-hidden="true">▣</span><span>Akses sesuai peran pengguna</span></div>
+                </div>
             </div>
+            <div class="secure-note"><span aria-hidden="true">◈</span> Ruang kerja yang aman dan terorganisir</div>
             <div class="intro-footer">Pengelolaan yang jelas dimulai dari sini.</div>
         </section>
 
@@ -431,6 +539,7 @@ $notifikasi = [
                 <p class="auth-switch">Sudah punya akun? <a href="login.php">Masuk</a></p>
                 <?php else: ?>
                 <form action="login_proses.php" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
                     <div class="field">
                         <label for="username">Username</label>
                         <input type="text" id="username" name="username" placeholder="Masukkan username" autocomplete="username" required autofocus>
@@ -441,6 +550,13 @@ $notifikasi = [
                             <input type="password" id="password" name="password" placeholder="Masukkan password" autocomplete="current-password" required>
                             <button class="toggle-password" type="button" data-password-target="password" aria-controls="password" aria-pressed="false">Lihat</button>
                         </div>
+                    </div>
+                    <div class="remember-row">
+                        <label class="remember-choice" for="remember_me">
+                            <input type="checkbox" id="remember_me" name="remember_me" value="1">
+                            <span>Ingat saya di perangkat ini</span>
+                        </label>
+                        <span class="remember-hint">Tetap masuk hingga 30 hari</span>
                     </div>
                     <button class="submit-button" type="submit">Masuk ke akun</button>
                 </form>

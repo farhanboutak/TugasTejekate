@@ -1,6 +1,7 @@
 <?php
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
+require_once '../config/audit.php';
 
 cek_akses(['admin', 'petugas']);
 
@@ -35,11 +36,13 @@ if ($id <= 0 || !in_array($status, $allowed, true)) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT status FROM peminjaman WHERE id = :id LIMIT 1");
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare("SELECT status FROM peminjaman WHERE id = :id FOR UPDATE");
     $stmt->execute([':id' => $id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$row) {
+        $pdo->rollBack();
         kembali_ke_dashboard('tidak_ada');
     }
 
@@ -50,14 +53,31 @@ try {
     );
 
     if (!$transisi_valid) {
+        $pdo->rollBack();
         kembali_ke_dashboard('invalid');
     }
 
     $stmt = $pdo->prepare("UPDATE peminjaman SET status = :status WHERE id = :id");
     $stmt->execute([':status' => $status, ':id' => $id]);
+    if ($stmt->rowCount() > 0) {
+        catat_aktivitas(
+            $pdo,
+            'transaksi.status_diubah',
+            'transaksi',
+            'Status transaksi #' . $id . ' diubah dari ' . $status_lama . ' menjadi ' . $status . '.',
+            $id,
+            ['status_lama' => $status_lama, 'status_baru' => $status]
+        );
+        $pdo->commit();
+    } else {
+        $pdo->rollBack();
+    }
 
     kembali_ke_dashboard($stmt->rowCount() > 0 ? 'sukses' : 'tidak_ada');
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log('SIMBAR transaction status update failed: ' . $e->getMessage());
     kembali_ke_dashboard('gagal');
 }

@@ -1,6 +1,7 @@
 <?php
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
+require_once '../config/audit.php';
 
 cek_akses(['admin']);
 
@@ -31,10 +32,37 @@ if ($id <= 0) {
 }
 
 try {
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare(
+        'SELECT u.nama AS peminjam, b.nama_barang
+         FROM peminjaman p
+         JOIN users u ON u.id = p.user_id
+         JOIN barang b ON b.id = p.barang_id
+         WHERE p.id = :id
+         FOR UPDATE'
+    );
+    $stmt->execute([':id' => $id]);
+    $transaksi = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$transaksi) {
+        $pdo->rollBack();
+        kembali_ke_dashboard('tidak_ada');
+    }
+
     $stmt = $pdo->prepare('DELETE FROM peminjaman WHERE id = :id');
     $stmt->execute([':id' => $id]);
+    catat_aktivitas(
+        $pdo,
+        'transaksi.dihapus',
+        'transaksi',
+        'Transaksi #' . $id . ' dihapus (' . $transaksi['peminjam'] . ' — ' . $transaksi['nama_barang'] . ').',
+        $id
+    );
+    $pdo->commit();
     kembali_ke_dashboard($stmt->rowCount() > 0 ? 'dihapus' : 'tidak_ada');
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log('SIMBAR transaction delete failed: ' . $e->getMessage());
     kembali_ke_dashboard('gagal');
 }

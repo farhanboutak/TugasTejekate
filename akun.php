@@ -88,6 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':password' => $password_hash,
                 ':id' => $user_id,
             ]);
+            $stmt = $pdo->prepare('DELETE FROM remember_tokens WHERE user_id = :user_id');
+            $stmt->execute([':user_id' => $user_id]);
+            remember_clear_cookie($pdo);
         } else {
             $stmt = $pdo->prepare(
                 'UPDATE users SET nama = :nama, username = :username WHERE id = :id'
@@ -169,7 +172,7 @@ $csrf = $_SESSION['csrf_token'];
         .actions button { border-color:var(--brand); background:var(--brand); color:var(--white); }
         .actions button:hover { background:var(--brand-dark); }
         :focus-visible { outline:3px solid rgba(20,107,104,.25); outline-offset:2px; }
-        @media(max-width:600px) { main{padding:28px 0}.card-header,form{padding:17px}.grid{grid-template-columns:1fr;gap:0}.actions{flex-direction:column-reverse}.actions a,.actions button{width:100%} }
+        @media(max-width:600px) { .topbar-inner{min-height:60px;flex-wrap:wrap;padding:10px 0}.back{margin-left:auto} main{padding:28px 0}.card-header,form{padding:17px}.grid{grid-template-columns:1fr;gap:0}.actions{flex-direction:column-reverse}.actions a,.actions button{width:100%} }
     </style>
 </head>
 <body>

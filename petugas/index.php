@@ -563,8 +563,8 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
 
         @media (max-width: 680px) {
             .container { width: min(100% - 28px, 1120px); }
-            .topbar-inner { min-height: 64px; }
-            .topbar-user { gap: 8px; font-size: 11px; }
+            .topbar-inner { min-height: 64px; flex-wrap: wrap; padding: 10px 0; }
+            .topbar-user { width: 100%; justify-content: space-between; gap: 8px; font-size: 11px; }
             .logout { min-height: 35px; padding: 0 11px; }
             .nav-links a { min-height: 33px; padding: 0 8px; font-size: 10px; }
             main { padding: 28px 0 42px; }
@@ -588,6 +588,13 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                 border: 1px solid var(--line);
                 border-radius: 11px;
                 background: var(--white);
+            }
+
+            @media (max-width: 390px) {
+                .user-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .topbar-user { gap: 5px; }
+                .nav-links { gap: 4px; }
+                .nav-links a { padding-inline: 8px; }
             }
             .table-wrap tbody td {
                 display: flex;

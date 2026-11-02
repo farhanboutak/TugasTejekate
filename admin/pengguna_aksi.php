@@ -1,6 +1,7 @@
 <?php
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
+require_once '../config/audit.php';
 
 cek_akses(['admin']);
 
@@ -58,6 +59,7 @@ try {
                 kembali_ke_pengguna('gagal');
             }
 
+            $pdo->beginTransaction();
             $stmt = $pdo->prepare(
                 'INSERT INTO users (nama, username, password, role)
                  VALUES (:nama, :username, :password, :role)'
@@ -68,6 +70,16 @@ try {
                 ':password' => $password_hash,
                 ':role' => $role,
             ]);
+            $id_baru = (int)$pdo->lastInsertId();
+            catat_aktivitas(
+                $pdo,
+                'pengguna.ditambahkan',
+                'pengguna',
+                'Akun "' . $nama . '" (' . $username . ') ditambahkan dengan role ' . $role . '.',
+                $id_baru,
+                ['username' => $username, 'role' => $role]
+            );
+            $pdo->commit();
             kembali_ke_pengguna('ditambahkan');
         }
 
@@ -78,7 +90,7 @@ try {
         }
 
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('SELECT id, role FROM users WHERE id = :id FOR UPDATE');
+        $stmt = $pdo->prepare('SELECT id, nama, username, role FROM users WHERE id = :id FOR UPDATE');
         $stmt->execute([':id' => $id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
@@ -119,6 +131,8 @@ try {
                 ':password' => $password_hash,
                 ':id' => $id,
             ]);
+            $stmt = $pdo->prepare('DELETE FROM remember_tokens WHERE user_id = :user_id');
+            $stmt->execute([':user_id' => $id]);
         } else {
             $stmt = $pdo->prepare(
                 'UPDATE users
@@ -133,6 +147,26 @@ try {
             ]);
         }
 
+        catat_aktivitas(
+            $pdo,
+            'pengguna.diperbarui',
+            'pengguna',
+            'Akun "' . $username . '" diperbarui.',
+            $id,
+            [
+                'sebelum' => [
+                    'nama' => $user['nama'],
+                    'username' => $user['username'],
+                    'role' => $user['role'],
+                ],
+                'sesudah' => [
+                    'nama' => $nama,
+                    'username' => $username,
+                    'role' => $role,
+                    'password_diubah' => $password !== '',
+                ],
+            ]
+        );
         $pdo->commit();
         if ($id === (int)$_SESSION['user_id']) {
             $_SESSION['nama'] = $nama;
@@ -150,7 +184,7 @@ try {
         }
 
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('SELECT id, role FROM users WHERE id = :id FOR UPDATE');
+        $stmt = $pdo->prepare('SELECT id, nama, username, role FROM users WHERE id = :id FOR UPDATE');
         $stmt->execute([':id' => $id]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
@@ -175,6 +209,14 @@ try {
 
         $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id');
         $stmt->execute([':id' => $id]);
+        catat_aktivitas(
+            $pdo,
+            'pengguna.dihapus',
+            'pengguna',
+            'Akun "' . $user['nama'] . '" (' . $user['username'] . ') dihapus.',
+            $id,
+            ['username' => $user['username'], 'role' => $user['role']]
+        );
         $pdo->commit();
         kembali_ke_pengguna('dihapus');
     }

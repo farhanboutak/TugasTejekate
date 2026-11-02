@@ -306,8 +306,17 @@ $csrf = $_SESSION['csrf_token'];
             text-align: center;
         }
 
+        @media (max-width: 767.98px) {
+            .navbar-custom .container { flex-wrap: wrap; padding-top: .45rem; padding-bottom: .45rem; }
+            .admin-nav { width: 100%; overflow-x: auto; padding-bottom: 2px; }
+        }
+
         @media (max-width: 575.98px) {
-            .navbar-custom .container { min-height: 64px; }
+            .navbar-custom .container { min-height: 64px; flex-wrap: wrap; padding-top: .45rem; padding-bottom: .45rem; }
+            .admin-nav { width:100%; overflow-x:auto; padding-bottom:2px; }
+            .admin-nav .btn { flex:0 0 auto; padding-inline:.55rem!important; font-size:.72rem; white-space:nowrap; }
+            .admin-nav .btn span { display:inline!important; }
+            .admin-nav .user-chip { display:none!important; }
             .user-chip { display: none; }
             .page-heading { align-items: flex-start; flex-direction: column; }
             .panel-body { padding: 16px; }
@@ -330,10 +339,14 @@ $csrf = $_SESSION['csrf_token'];
                 <span class="brand-mark me-2"><i class="bi bi-box-seam-fill"></i></span>
                 SIMBAR Admin
             </a>
-            <div class="d-flex align-items-center gap-2 gap-md-3">
+            <div class="d-flex align-items-center gap-2 gap-md-3 admin-nav">
                 <span class="user-chip d-none d-md-inline-flex align-items-center">
                     <i class="bi bi-person-circle me-1"></i><?= h($_SESSION['nama'] ?? 'Admin') ?>
                 </span>
+                <a href="index.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-grid me-1"></i><span>Dashboard</span></a>
+                <a href="barang.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-box-seam me-1"></i><span>Inventaris</span></a>
+                <a href="pengguna.php" class="btn btn-sm btn-light px-3" aria-current="page"><i class="bi bi-people me-1"></i><span>Pengguna</span></a>
+                <a href="log.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-clock-history me-1"></i><span>Log</span></a>
                 <a href="../logout.php" class="btn btn-sm btn-light px-3">
                     <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Keluar</span>
                 </a>

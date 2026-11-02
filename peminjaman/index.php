@@ -68,11 +68,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare('SELECT id, stok FROM barang WHERE id = :id FOR UPDATE');
+        $stmt = $pdo->prepare('SELECT id, stok, diarsipkan FROM barang WHERE id = :id FOR UPDATE');
         $stmt->execute([':id' => $barang_id]);
         $barang = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$barang) {
+            $pdo->rollBack();
+            header('Location: index.php?pesan=barang_tidak_ada');
+            exit;
+        }
+        if ((int)$barang['diarsipkan'] === 1) {
             $pdo->rollBack();
             header('Location: index.php?pesan=barang_tidak_ada');
             exit;
@@ -151,6 +156,7 @@ try {
                 ) AS stok_tersedia
          FROM barang b
          LEFT JOIN peminjaman p ON p.barang_id = b.id
+         WHERE b.diarsipkan = 0
          GROUP BY b.id, b.nama_barang, b.kategori, b.kondisi, b.stok, b.foto
          ORDER BY b.nama_barang ASC"
     );
@@ -630,8 +636,8 @@ $status_class = [
 
         @media (max-width: 600px) {
             .container { width: min(100% - 28px, 1120px); }
-            .topbar-inner { min-height: 64px; }
-            .topbar-user { gap: 8px; font-size: 11px; }
+            .topbar-inner { min-height: 64px; flex-wrap: wrap; padding: 10px 0; }
+            .topbar-user { width: 100%; justify-content: flex-end; gap: 8px; font-size: 11px; }
             .logout { min-height: 35px; padding: 0 11px; }
             main { padding: 27px 0 42px; }
             .welcome { align-items: flex-start; flex-direction: column; }
@@ -655,6 +661,12 @@ $status_class = [
             .table-wrap tbody td::before { content: attr(data-label); color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
             .table-wrap tbody td:first-child,
             .table-wrap tbody td:last-child { grid-column: 1 / -1; }
+        }
+
+        @media (max-width: 390px) {
+            .topbar-user { gap: 6px; }
+            .user-name { margin-right: auto; max-width: 125px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .logout { padding-inline: 9px; }
         }
 
         @media (max-width: 390px) {
