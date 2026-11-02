@@ -289,6 +289,8 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             box-shadow: 0 0 0 .2rem rgba(20, 107, 104, .13);
         }
         .filter-card .form-control::placeholder { color: #97a4aa; }
+        .filter-actions { display: flex; gap: 8px; }
+        .filter-actions .btn { flex: 1 1 0; padding-right: .4rem; padding-left: .4rem; white-space: nowrap; }
 
         .btn {
             border-radius: 9px;
@@ -590,15 +592,15 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
     </div>
 
     <div class="filter-card p-3 mb-3 shadow-sm">
-        <div class="row g-2">
-            <div class="col-md-5">
+        <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-6 col-lg-4">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" id="searchInput" class="form-control border-start-0"
                            placeholder="Cari peminjam / nama barang...">
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-12 col-md-6 col-lg-3">
                 <select id="statusFilter" class="form-select">
                     <option value="">Semua Status</option>
                     <option value="Pending">Pending</option>
@@ -607,21 +609,25 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                     <option value="Dikembalikan">Dikembalikan</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <input type="date" id="dateFrom" class="form-control" aria-label="Tanggal pinjam dari" title="Tanggal pinjam dari">
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="date" id="dateFrom" class="form-control" aria-label="Tanggal pinjam dari" title="Tanggal pinjam dari">
+                    </div>
+                    <div class="col-6">
+                        <input type="date" id="dateTo" class="form-control" aria-label="Tanggal pinjam sampai" title="Tanggal pinjam sampai">
+                    </div>
+                </div>
             </div>
-            <div class="col-6 col-md-2">
-                <input type="date" id="dateTo" class="form-control" aria-label="Tanggal pinjam sampai" title="Tanggal pinjam sampai">
-            </div>
-            <div class="col-6 col-md-2">
-                <a href="ekspor_peminjaman.php" id="exportLink" class="btn btn-primary w-100">
-                    <i class="bi bi-download me-1"></i>Ekspor CSV
-                </a>
-            </div>
-            <div class="col-6 col-md-2 text-md-end">
-                <a href="index.php" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-arrow-clockwise me-1"></i> Muat Ulang
-                </a>
+            <div class="col-12 col-md-6 col-lg-2">
+                <div class="filter-actions">
+                    <a href="ekspor_peminjaman.php" id="exportLink" class="btn btn-primary" aria-label="Ekspor CSV" title="Ekspor CSV">
+                        <i class="bi bi-download me-1"></i>CSV
+                    </a>
+                    <a href="index.php" class="btn btn-outline-secondary" aria-label="Muat ulang filter" title="Muat ulang filter">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Reset
+                    </a>
+                </div>
             </div>
         </div>
     </div>

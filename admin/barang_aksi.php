@@ -59,7 +59,7 @@ function simpan_foto_barang($upload)
         'image/png' => 'png',
         'image/webp' => 'webp',
     ];
-    if (!isset($ekstensi[$mime])) {
+    if (!is_string($mime) || !isset($ekstensi[$mime])) {
         throw new FotoBarangException('foto_invalid');
     }
     $gambar = @getimagesize($upload['tmp_name']);

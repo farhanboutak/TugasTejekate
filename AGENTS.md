@@ -33,7 +33,7 @@ SIMBAR adalah aplikasi web sederhana untuk mengelola inventaris barang dan trans
 - `akun.php`: profil bersama semua role untuk memperbarui nama/username dan opsional password; perubahan memerlukan password saat ini.
 - `config/koneksi.php`: membuat koneksi PDO ke database dan memulai session.
 - `config/auth.php`: fungsi `cek_akses($allowed_roles)` untuk memeriksa session login dan role.
-- `admin/index.php`: mengambil daftar peminjaman dengan join ke tabel `users` dan `barang`.
+- `admin/index.php`: dashboard admin dengan ringkasan, filter transaksi responsif, tautan pengelolaan, dan thumbnail foto barang.
 - `logout.php`: menghapus session dan mengarahkan user kembali ke halaman login.
 - `update_password.php`: skrip utilitas yang langsung mengubah password admin; jangan menjalankannya tanpa persetujuan eksplisit dan jangan mengeksposnya sebagai endpoint publik.
 - `database/db_simbar.sql`: definisi dan data awal untuk tabel `users`, `barang`, dan `peminjaman`.
