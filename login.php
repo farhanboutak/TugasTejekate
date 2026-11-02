@@ -3,42 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - SIMBAR</title>
-    <!-- Menggunakan Bootstrap 5 untuk UI/UX yang rapi -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light d-flex align-items-center py-4" style="height: 100vh;">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-body p-4">
-                        <h3 class="text-center mb-4 fw-bold text-primary">SIMBAR</h3>
-                        <p class="text-center text-muted small">Sistem Inventaris & Peminjaman Barang</p>
-                        
-                        <!-- Notifikasi jika login gagal -->
-                        <?php if(isset($_GET['pesan']) && $_GET['pesan'] == 'gagal'): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                Username atau Password salah!
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
+    <meta name="description" content="Masuk ke SIMBAR untuk mengelola inventaris dan peminjaman barang.">
+    <title>Masuk — SIMBAR</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #172a3a;
+            --muted: #647587;
+            --brand: #146b68;
+            --brand-dark: #105653;
+            --mint: #e8f4ef;
+            --paper: #fbfaf6;
+            --line: #e7e9e3;
+            --white: #fff;
+        }
 
-                        <form action="login_proses.php" method="POST">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <input type="text" class="form-control" id="username" name="username" required autofocus>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Login</button>
-                        </form>
-                    </div>
-                </div>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            margin: 0;
+            padding: 32px 20px;
+            background:
+                radial-gradient(ellipse at 12% 13%, rgba(20, 107, 104, .09), transparent 34%),
+                var(--paper);
+            color: var(--ink);
+            font-family: "Segoe UI", Arial, sans-serif;
+            line-height: 1.55;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .login-layout {
+            width: min(940px, 100%);
+            min-height: 570px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+            border: 1px solid rgba(23, 42, 58, .08);
+            border-radius: 22px;
+            background: var(--white);
+            box-shadow: 0 25px 80px rgba(29, 55, 62, .12);
+        }
+
+        .intro {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 36px;
+            background: var(--brand);
+            color: var(--white);
+        }
+
+        .intro::before,
+        .intro::after {
+            position: absolute;
+            width: 310px;
+            height: 310px;
+            border: 1px solid rgba(255, 255, 255, .13);
+            border-radius: 50%;
+            content: "";
+            pointer-events: none;
+        }
+
+        .intro::before {
+            right: -152px;
+            bottom: 20px;
+            box-shadow: 0 0 0 36px rgba(255, 255, 255, .035), 0 0 0 72px rgba(255, 255, 255, .025);
+        }
+
+        .intro::after {
+            right: -205px;
+            bottom: -34px;
+        }
+
+        .brand {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 11px;
+            width: fit-content;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: .05em;
+        }
+
+        .brand-mark {
+            width: 41px;
+            height: 41px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .3);
+            border-radius: 13px;
+            background: rgba(255, 255, 255, .12);
+        }
+
+        .brand-mark svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .intro-copy {
+            position: relative;
+            z-index: 1;
+            max-width: 360px;
+            margin: 0 0 20px;
+        }
+
+        .intro-label {
+            margin: 0 0 13px;
+            color: #bfe2d8;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+
+        .intro h1 {
+            margin: 0 0 15px;
+            font-size: clamp(31px, 4vw, 43px);
+            line-height: 1.13;
+            letter-spacing: -.045em;
+        }
+
+        .intro-copy > p:last-child {
+            margin: 0;
+            color: rgba(255, 255, 255, .78);
+            font-size: 14px;
+        }
+
+        .intro-footer {
+            position: relative;
+            z-index: 1;
+            color: rgba(255, 255, 255, .68);
+            font-size: 11px;
+        }
+
+        .form-panel {
+            display: flex;
+            align-items: center;
+            padding: 52px clamp(28px, 6vw, 65px);
+        }
+
+        .form-content {
+            width: 100%;
+        }
+
+        .form-content h2 {
+            margin: 0 0 7px;
+            font-size: 29px;
+            letter-spacing: -.04em;
+        }
+
+        .form-description {
+            margin: 0 0 29px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 0 0 21px;
+            padding: 12px 14px;
+            border: 1px solid #f1caca;
+            border-radius: 9px;
+            background: #fff3f2;
+            color: #a43737;
+            font-size: 13px;
+        }
+
+        .alert strong {
+            display: block;
+            margin-bottom: 1px;
+        }
+
+        .field {
+            margin-bottom: 19px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            color: #314556;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .field input {
+            width: 100%;
+            min-height: 48px;
+            padding: 0 14px;
+            border: 1px solid #dfe5e3;
+            border-radius: 9px;
+            outline: none;
+            background: #fff;
+            color: var(--ink);
+            font: inherit;
+            font-size: 14px;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .field input::placeholder {
+            color: #a0abb2;
+        }
+
+        .field input:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(20, 107, 104, .12);
+        }
+
+        .password-wrap {
+            position: relative;
+        }
+
+        .password-wrap input {
+            padding-right: 68px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            padding: 5px;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: var(--brand);
+            cursor: pointer;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .submit-button {
+            width: 100%;
+            min-height: 49px;
+            margin-top: 5px;
+            border: 0;
+            border-radius: 9px;
+            background: var(--brand);
+            color: var(--white);
+            cursor: pointer;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 750;
+            transition: background .2s ease, transform .2s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-1px);
+            background: var(--brand-dark);
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 24px;
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .back-link:hover {
+            color: var(--brand);
+        }
+
+        @media (max-width: 680px) {
+            body {
+                padding: 18px 14px;
+            }
+
+            .login-layout {
+                max-width: 440px;
+                min-height: 0;
+                grid-template-columns: 1fr;
+                border-radius: 17px;
+            }
+
+            .intro {
+                min-height: 205px;
+                padding: 23px 25px;
+            }
+
+            .intro-copy {
+                margin: 27px 0 0;
+            }
+
+            .intro h1 {
+                max-width: 300px;
+                margin-bottom: 8px;
+                font-size: 29px;
+            }
+
+            .intro-label,
+            .intro-footer {
+                display: none;
+            }
+
+            .intro-copy > p:last-child {
+                max-width: 320px;
+                font-size: 12px;
+            }
+
+            .form-panel {
+                padding: 32px 25px 29px;
+            }
+
+            .form-content h2 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="login-layout">
+        <section class="intro" aria-label="Tentang SIMBAR">
+            <a class="brand" href="index.php" aria-label="SIMBAR, kembali ke beranda">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="m4.5 8.8 7.5 4.3 7.5-4.3M12 13.2V21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>SIMBAR</span>
+            </a>
+            <div class="intro-copy">
+                <p class="intro-label">Sistem Inventaris &amp; Peminjaman Barang</p>
+                <h1>Semua barang, lebih teratur.</h1>
+                <p>Kelola inventaris dan pantau peminjaman dalam satu tempat.</p>
             </div>
-        </div>
-    </div>
+            <div class="intro-footer">Pengelolaan yang jelas dimulai dari sini.</div>
+        </section>
+
+        <section class="form-panel" aria-labelledby="login-heading">
+            <div class="form-content">
+                <h2 id="login-heading">Selamat datang</h2>
+                <p class="form-description">Masuk ke akun SIMBAR untuk melanjutkan.</p>
+
+                <?php if (isset($_GET['pesan']) && $_GET['pesan'] === 'gagal'): ?>
+                    <div class="alert" role="alert">
+                        <span aria-hidden="true">!</span>
+                        <span><strong>Login belum berhasil</strong>Username atau password yang kamu masukkan salah.</span>
+                    </div>
+                <?php endif; ?>
+
+                <form action="login_proses.php" method="POST">
+                    <div class="field">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" placeholder="Masukkan username" autocomplete="username" required autofocus>
+                    </div>
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <div class="password-wrap">
+                            <input type="password" id="password" name="password" placeholder="Masukkan password" autocomplete="current-password" required>
+                            <button class="toggle-password" type="button" aria-controls="password" aria-pressed="false">Lihat</button>
+                        </div>
+                    </div>
+                    <button class="submit-button" type="submit">Masuk ke akun</button>
+                </form>
+
+                <a class="back-link" href="index.php">← Kembali ke beranda</a>
+            </div>
+        </section>
+    </main>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.querySelector('.toggle-password');
+
+        togglePassword.addEventListener('click', () => {
+            const isVisible = passwordInput.type === 'text';
+            passwordInput.type = isVisible ? 'password' : 'text';
+            togglePassword.textContent = isVisible ? 'Lihat' : 'Sembunyikan';
+            togglePassword.setAttribute('aria-pressed', String(!isVisible));
+        });
+    </script>
 </body>
 </html>
