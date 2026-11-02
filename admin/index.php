@@ -1,59 +1,705 @@
 <?php
-// Pastikan file koneksi sudah dipanggil
 require_once '../config/koneksi.php';
+require_once '../config/auth.php';
+
+cek_akses(['admin']);
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf = $_SESSION['csrf_token'];
+
+$data_peminjaman = [];
+$error_message   = null;
 
 try {
-    // Query dengan SQL JOIN untuk menghubungkan 3 tabel (peminjaman, users, barang)
-    $sql = "SELECT peminjaman.id, users.nama AS nama_peminjam, barang.nama_barang, 
-                   peminjaman.tanggal_pinjam, peminjaman.tanggal_kembali, 
-                   peminjaman.jumlah_pinjam, peminjaman.status 
+    $sql = "SELECT peminjaman.id, users.nama AS nama_peminjam, barang.nama_barang,
+                   peminjaman.tanggal_pinjam, peminjaman.tanggal_kembali,
+                   peminjaman.jumlah_pinjam, peminjaman.status
             FROM peminjaman
-            JOIN users ON peminjaman.user_id = users.id
+            JOIN users  ON peminjaman.user_id  = users.id
             JOIN barang ON peminjaman.barang_id = barang.id
             ORDER BY peminjaman.id DESC";
-            
     $stmt = $pdo->query($sql);
     $data_peminjaman = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 } catch (PDOException $e) {
-    echo "Error query: " . $e->getMessage();
+    $error_message = "Gagal memuat data peminjaman. Silakan coba lagi.";
 }
-?>
 
-<!-- Tampilan Tabel Data di Frontend (Bootstrap) -->
-<div class="container mt-4">
-    <h3>Data Transaksi Peminjaman Barang</h3>
-    <table class="table table-bordered table-striped mt-3">
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Peminjam</th>
-                <th>Nama Barang</th>
-                <th>Tgl Pinjam</th>
-                <th>Tgl Kembali</th>
-                <th>Jumlah</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php $no = 1; foreach ($data_peminjaman as $row): ?>
-            <tr>
-                <td><?= $no++; ?></td>
-                <td><?= htmlspecialchars($row['nama_peminjam']); ?></td>
-                <td><?= htmlspecialchars($row['nama_barang']); ?></td>
-                <td><?= $row['tanggal_pinjam']; ?></td>
-                <td><?= $row['tanggal_kembali']; ?></td>
-                <td><?= $row['jumlah_pinjam']; ?></td>
-                <td>
-                    <span class="badge bg-<?= 
-                        $row['status'] == 'Disetujui' ? 'success' : 
-                        ($row['status'] == 'Pending' ? 'warning' : 'secondary'); 
-                    ?>">
-                        <?= $row['status']; ?>
-                    </span>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+$total     = count($data_peminjaman);
+$pending   = 0;
+$disetujui = 0;
+$dikembalikan = 0;
+$ditolak   = 0;
+foreach ($data_peminjaman as $r) {
+    switch ($r['status']) {
+        case 'Pending':       $pending++;       break;
+        case 'Disetujui':     $disetujui++;     break;
+        case 'Dikembalikan':  $dikembalikan++;  break;
+        case 'Ditolak':       $ditolak++;       break;
+    }
+}
+
+function format_tanggal($tgl) {
+    if (empty($tgl) || $tgl === '0000-00-00') return '-';
+    $bulan = [1=>'Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    $ts = strtotime($tgl);
+    if ($ts === false) return htmlspecialchars($tgl);
+    return date('d', $ts) . ' ' . $bulan[(int)date('n', $ts)] . ' ' . date('Y', $ts);
+}
+
+function badge_status($status) {
+    $map = [
+        'Pending'      => ['warning', 'bi-hourglass-split', 'Pending'],
+        'Disetujui'    => ['success', 'bi-check-circle',   'Disetujui'],
+        'Ditolak'      => ['danger',  'bi-x-circle',       'Ditolak'],
+        'Dikembalikan' => ['primary', 'bi-arrow-return-left', 'Dikembalikan'],
+    ];
+    $cfg = $map[$status] ?? ['secondary', 'bi-dash-circle', $status];
+    return '<span class="badge badge-status bg-' . $cfg[0] . '-subtle text-' . $cfg[0] . ' border border-' . $cfg[0] . '-subtle">'
+         . '<i class="bi ' . $cfg[1] . ' me-1"></i>' . htmlspecialchars($cfg[2]) . '</span>';
+}
+
+$pesan_map = [
+    'sukses'    => ['success', 'bi-check-circle-fill', 'Status transaksi berhasil diperbarui.'],
+    'dihapus'   => ['success', 'bi-trash-fill',        'Transaksi berhasil dihapus.'],
+    'tidak_ada' => ['warning', 'bi-exclamation-circle-fill', 'Data tidak ditemukan atau tidak berubah.'],
+    'invalid'   => ['danger',  'bi-x-circle-fill',     'Permintaan tidak valid.'],
+    'gagal'     => ['danger',  'bi-exclamation-triangle-fill', 'Terjadi kesalahan saat memproses data.'],
+    'csrf'      => ['danger',  'bi-shield-x',          'Sesi tidak valid. Silakan coba lagi.'],
+];
+$pesan_key = $_GET['pesan'] ?? '';
+$pesan_info = $pesan_map[$pesan_key] ?? null;
+
+$nama_admin = $_SESSION['nama'] ?? 'Admin';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - SIMBAR</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #172a3a;
+            --muted: #647587;
+            --brand: #146b68;
+            --brand-dark: #105653;
+            --mint: #e8f4ef;
+            --paper: #fbfaf6;
+            --line: #e7e9e3;
+            --white: #fff;
+            --primary: var(--brand);
+            --primary-soft: var(--mint);
+            --bs-primary: var(--brand);
+            --bs-primary-rgb: 20, 107, 104;
+            --bs-body-color: var(--ink);
+            --bs-body-bg: var(--paper);
+            --bs-border-color: var(--line);
+            --bs-primary-text-emphasis: var(--brand-dark);
+            --bs-primary-bg-subtle: var(--mint);
+            --bs-primary-border-subtle: #c7e1d8;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            background:
+                radial-gradient(ellipse at 12% 0, rgba(20, 107, 104, .07), transparent 34%),
+                var(--paper);
+            color: var(--ink);
+            font-family: "Segoe UI", Arial, sans-serif;
+            line-height: 1.55;
+        }
+
+        .container { max-width: 1120px; }
+
+        .navbar-custom {
+            background: var(--brand);
+            box-shadow: 0 8px 24px rgba(16, 86, 83, .16);
+        }
+        .navbar-custom .container { min-height: 72px; }
+        .navbar-custom .navbar-brand {
+            display: inline-flex;
+            align-items: center;
+            letter-spacing: .04em;
+        }
+        .navbar-custom .navbar-brand i {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 12px;
+            background: rgba(255,255,255,.12);
+            font-size: 1rem;
+        }
+        .user-chip {
+            padding: .35rem .8rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.15);
+            font-size: .85rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .page-title {
+            gap: 12px;
+            margin-bottom: 25px !important;
+            color: var(--ink);
+            font-size: clamp(1.45rem, 3vw, 1.85rem);
+            font-weight: 700;
+            letter-spacing: -.04em;
+        }
+        .page-title i {
+            display: grid;
+            width: 44px;
+            height: 44px;
+            place-items: center;
+            flex: 0 0 auto;
+            margin: 0;
+            padding: 0;
+            border-radius: 13px;
+            background: var(--mint);
+            color: var(--brand);
+            font-size: 1.15rem;
+        }
+
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: var(--white);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            background: var(--accent, var(--brand));
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(29, 55, 62, .09) !important;
+        }
+        .stat-card .card-body { min-height: 104px; padding: 20px; }
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            font-size: 1.15rem;
+        }
+        .stat-label {
+            color: var(--muted);
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+        .stat-value { color: var(--ink); }
+        .stat-icon.bg-primary-subtle,
+        .stat-icon.text-primary {
+            background-color: var(--mint) !important;
+            color: var(--brand) !important;
+        }
+
+        .filter-card {
+            padding: 16px !important;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: var(--white);
+            box-shadow: 0 8px 24px rgba(29, 55, 62, .045) !important;
+        }
+        .filter-card .form-control,
+        .filter-card .form-select,
+        .filter-card .input-group-text {
+            min-height: 44px;
+            border-color: var(--line);
+            background-color: var(--white);
+            color: var(--muted);
+        }
+        .filter-card .form-control { padding: .55rem .85rem; }
+        .filter-card .input-group-text { padding-inline: .85rem; }
+        .filter-card .form-control,
+        .filter-card .form-select { border-radius: 9px; }
+        .filter-card .input-group-text:first-child { border-radius: 9px 0 0 9px; }
+        .filter-card .input-group .form-control { border-radius: 0 9px 9px 0; }
+        .filter-card .form-control:focus,
+        .filter-card .form-select:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 .2rem rgba(20, 107, 104, .13);
+        }
+        .filter-card .form-control::placeholder { color: #97a4aa; }
+
+        .btn {
+            border-radius: 9px;
+            font-weight: 650;
+            transition: background-color .2s ease, border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+        }
+        .btn:focus-visible,
+        .btn-close:focus-visible,
+        .form-control:focus-visible,
+        .form-select:focus-visible {
+            outline: 3px solid rgba(20, 107, 104, .25);
+            outline-offset: 2px;
+            box-shadow: none;
+        }
+        .btn-primary {
+            --bs-btn-bg: var(--brand);
+            --bs-btn-border-color: var(--brand);
+            --bs-btn-hover-bg: var(--brand-dark);
+            --bs-btn-hover-border-color: var(--brand-dark);
+            --bs-btn-active-bg: var(--brand-dark);
+            --bs-btn-active-border-color: var(--brand-dark);
+            --bs-btn-focus-shadow-rgb: 20, 107, 104;
+        }
+        .btn-outline-secondary {
+            --bs-btn-color: var(--muted);
+            --bs-btn-border-color: var(--line);
+            --bs-btn-hover-bg: var(--mint);
+            --bs-btn-hover-color: var(--brand-dark);
+            --bs-btn-hover-border-color: var(--brand);
+        }
+
+        .table-card {
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: var(--white);
+            box-shadow: 0 8px 24px rgba(29, 55, 62, .045) !important;
+        }
+        .table-card .table { margin-bottom: 0; }
+        .table-card thead th {
+            background: #f5f8f5;
+            color: var(--muted);
+            font-size: .69rem;
+            letter-spacing: .07em;
+            border-bottom: 1px solid var(--line);
+            padding: .9rem 1rem;
+        }
+        .table-card tbody td {
+            padding: .9rem 1rem;
+            border-color: #eef1ed;
+            color: var(--ink);
+            font-size: .875rem;
+        }
+        .table-card tbody tr:hover { background: #f8faf8; }
+        .peminjam-cell { font-weight: 650; }
+        .avatar {
+            background: var(--mint);
+            color: var(--brand);
+        }
+        .barang-cell { color: var(--ink); }
+        .barang-cell i { color: var(--brand); }
+        .badge-status {
+            padding: .4rem .7rem;
+            border-radius: 999px;
+            font-size: .75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .btn-aksi {
+            min-width: 34px;
+            min-height: 34px;
+            padding: .3rem .5rem;
+        }
+        .btn-aksi:hover { transform: translateY(-1px); }
+
+        .modal-content {
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: var(--white);
+            box-shadow: 0 24px 70px rgba(29, 55, 62, .18);
+        }
+        .modal-header,
+        .modal-footer { border-color: var(--line); }
+        .modal-body { padding: 1.25rem; }
+        .alert-custom {
+            border: 0;
+            border-radius: 11px;
+            box-shadow: 0 4px 12px rgba(29, 55, 62, .05);
+        }
+
+        .fade-in { animation: fadeIn .4s ease both; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 767.98px) {
+            .navbar-custom .container { min-height: 64px; }
+            .table-card .table { min-width: 820px; }
+        }
+
+        @media (max-width: 575.98px) {
+            .navbar-custom .navbar-brand { font-size: .95rem; }
+            .navbar-custom .navbar-brand i {
+                width: 34px;
+                height: 34px;
+                margin-right: .55rem !important;
+            }
+            .user-chip { display: none !important; }
+            .stat-card .card-body { min-height: 88px; padding: 14px; }
+            .stat-icon { width: 38px; height: 38px; font-size: 1rem; }
+            .stat-value { font-size: 1.4rem; }
+            .stat-label { font-size: .64rem; }
+            .filter-card { padding: 12px !important; }
+            .table-card .table { min-width: 780px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="index.php">
+            <i class="bi bi-box-seam-fill me-2"></i>SIMBAR Admin
+        </a>
+        <div class="d-flex align-items-center gap-2 gap-md-3">
+            <span class="user-chip text-white d-none d-md-inline-flex align-items-center">
+                <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($nama_admin) ?>
+            </span>
+            <a href="pengguna.php" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                <i class="bi bi-people me-1"></i><span>Pengguna</span>
+            </a>
+            <a href="../logout.php" class="btn btn-sm btn-light rounded-pill px-3">
+                <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Keluar</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-4 my-md-5 fade-in">
+
+    <?php if ($pesan_info): ?>
+        <div class="alert alert-<?= $pesan_info[0] ?> alert-custom alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="bi <?= $pesan_info[1] ?> me-2 fs-5"></i>
+            <div><?= htmlspecialchars($pesan_info[2]) ?></div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($error_message): ?>
+        <div class="alert alert-danger alert-custom d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+            <div><?= htmlspecialchars($error_message) ?></div>
+        </div>
+    <?php endif; ?>
+
+    <h3 class="page-title mb-4 d-flex align-items-center">
+        <i class="bi bi-clipboard-data-fill"></i>Data Transaksi Peminjaman
+    </h3>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label mb-1">Total</div>
+                        <div class="stat-value"><?= $total ?></div>
+                    </div>
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-collection-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label mb-1">Pending</div>
+                        <div class="stat-value"><?= $pending ?></div>
+                    </div>
+                    <div class="stat-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label mb-1">Disetujui</div>
+                        <div class="stat-value"><?= $disetujui ?></div>
+                    </div>
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label mb-1">Dikembalikan</div>
+                        <div class="stat-value"><?= $dikembalikan ?></div>
+                    </div>
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-arrow-return-left"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filter-card p-3 mb-3 shadow-sm">
+        <div class="row g-2">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0"
+                           placeholder="Cari peminjam / nama barang...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="statusFilter" class="form-select">
+                    <option value="">Semua Status</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Disetujui">Disetujui</option>
+                    <option value="Ditolak">Ditolak</option>
+                    <option value="Dikembalikan">Dikembalikan</option>
+                </select>
+            </div>
+            <div class="col-md-3 text-md-end">
+                <a href="index.php" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Muat Ulang
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-card shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle" id="dataTable">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width:55px;">No</th>
+                        <th>Peminjam</th>
+                        <th>Nama Barang</th>
+                        <th>Tgl Pinjam</th>
+                        <th>Tgl Kembali</th>
+                        <th class="text-center">Jumlah</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center" style="width:150px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($data_peminjaman)): ?>
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                <div class="fw-semibold">Belum ada data transaksi peminjaman.</div>
+                                <div class="small">Transaksi baru akan tampil di sini.</div>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php $no = 1; foreach ($data_peminjaman as $row):
+                            $inisial = strtoupper(mb_substr($row['nama_peminjam'], 0, 1));
+                        ?>
+                            <tr>
+                                <td class="text-center text-muted"><?= $no++ ?></td>
+                                <td>
+                                    <div class="peminjam-cell">
+                                        <div class="avatar"><?= htmlspecialchars($inisial) ?></div>
+                                        <span><?= htmlspecialchars($row['nama_peminjam']) ?></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="barang-cell">
+                                        <i class="bi bi-box-seam"></i>
+                                        <span><?= htmlspecialchars($row['nama_barang']) ?></span>
+                                    </div>
+                                </td>
+                                <td><?= format_tanggal($row['tanggal_pinjam']) ?></td>
+                                <td><?= format_tanggal($row['tanggal_kembali']) ?></td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border"><?= (int)$row['jumlah_pinjam'] ?></span>
+                                </td>
+                                <td class="text-center"><?= badge_status($row['status']) ?></td>
+                                <td class="text-center">
+                                    <div class="d-inline-flex gap-1">
+                                        <?php if ($row['status'] === 'Pending'): ?>
+                                            <button type="button" class="btn btn-success btn-aksi"
+                                                title="Setujui"
+                                                data-bs-toggle="modal" data-bs-target="#modalAksi"
+                                                data-id="<?= (int)$row['id'] ?>"
+                                                data-status="Disetujui"
+                                                data-label="menyetujui"
+                                                data-nama="<?= htmlspecialchars($row['nama_peminjam']) ?>"
+                                                data-barang="<?= htmlspecialchars($row['nama_barang']) ?>">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-aksi"
+                                                title="Tolak"
+                                                data-bs-toggle="modal" data-bs-target="#modalAksi"
+                                                data-id="<?= (int)$row['id'] ?>"
+                                                data-status="Ditolak"
+                                                data-label="menolak"
+                                                data-nama="<?= htmlspecialchars($row['nama_peminjam']) ?>"
+                                                data-barang="<?= htmlspecialchars($row['nama_barang']) ?>">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        <?php elseif ($row['status'] === 'Disetujui'): ?>
+                                            <button type="button" class="btn btn-primary btn-aksi"
+                                                title="Kembalikan"
+                                                data-bs-toggle="modal" data-bs-target="#modalAksi"
+                                                data-id="<?= (int)$row['id'] ?>"
+                                                data-status="Dikembalikan"
+                                                data-label="mengembalikan"
+                                                data-nama="<?= htmlspecialchars($row['nama_peminjam']) ?>"
+                                                data-barang="<?= htmlspecialchars($row['nama_barang']) ?>">
+                                                <i class="bi bi-arrow-return-left"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="text-muted small">-</span>
+                                        <?php endif; ?>
+                                        <button type="button" class="btn btn-outline-danger btn-aksi"
+                                            title="Hapus"
+                                            data-bs-toggle="modal" data-bs-target="#modalHapus"
+                                            data-id="<?= (int)$row['id'] ?>"
+                                            data-nama="<?= htmlspecialchars($row['nama_peminjam']) ?>"
+                                            data-barang="<?= htmlspecialchars($row['nama_barang']) ?>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-3 mb-0">
+        <i class="bi bi-info-circle me-1"></i>
+        Total ditampilkan: <span id="rowCount" class="fw-semibold"><?= $total ?></span> baris
+    </p>
 </div>
+
+<div class="modal fade" id="modalAksi" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="aksi_status.php" class="modal-content">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+            <input type="hidden" name="id" id="aksiId">
+            <input type="hidden" name="status" id="aksiStatus">
+            <div class="modal-header">
+                <h5 class="modal-title fw-semibold">
+                    <i class="bi bi-question-circle me-2 text-primary"></i>Konfirmasi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Anda akan <strong id="aksiLabel"></strong> transaksi berikut:</p>
+                <div class="bg-light rounded p-3 small">
+                    <div class="mb-1"><i class="bi bi-person me-2 text-muted"></i>Peminjam: <strong id="aksiNama"></strong></div>
+                    <div><i class="bi bi-box-seam me-2 text-muted"></i>Barang: <strong id="aksiBarang"></strong></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary px-4">Ya, lanjutkan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="modalHapus" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="hapus.php" class="modal-content">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+            <input type="hidden" name="id" id="hapusId">
+            <div class="modal-header">
+                <h5 class="modal-title fw-semibold text-danger">
+                    <i class="bi bi-trash me-2"></i>Hapus Transaksi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">Yakin ingin menghapus transaksi ini secara permanen?</p>
+                <div class="bg-light rounded p-3 small">
+                    <div class="mb-1"><i class="bi bi-person me-2 text-muted"></i>Peminjam: <strong id="hapusNama"></strong></div>
+                    <div><i class="bi bi-box-seam me-2 text-muted"></i>Barang: <strong id="hapusBarang"></strong></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-danger px-4">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    const search = document.getElementById('searchInput');
+    const filter = document.getElementById('statusFilter');
+    const table  = document.getElementById('dataTable');
+    const rows   = table.querySelectorAll('tbody tr');
+    const countEl = document.getElementById('rowCount');
+
+    function applyFilter() {
+        const q = search.value.toLowerCase();
+        const s = filter.value.toLowerCase();
+        let visible = 0;
+
+        rows.forEach(row => {
+            if (row.children.length < 8) { row.style.display = ''; return; }
+
+            const text = row.textContent.toLowerCase();
+            const statusBadge = row.cells[6]?.textContent.trim().toLowerCase() || '';
+            const matchText   = !q || text.includes(q);
+            const matchStatus = !s || statusBadge === s;
+
+            const show = matchText && matchStatus;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (countEl) countEl.textContent = visible;
+    }
+
+    search.addEventListener('input', applyFilter);
+    filter.addEventListener('change', applyFilter);
+
+    document.getElementById('modalAksi').addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        document.getElementById('aksiId').value     = btn.getAttribute('data-id');
+        document.getElementById('aksiStatus').value = btn.getAttribute('data-status');
+        document.getElementById('aksiLabel').textContent  = btn.getAttribute('data-label');
+        document.getElementById('aksiNama').textContent   = btn.getAttribute('data-nama');
+        document.getElementById('aksiBarang').textContent = btn.getAttribute('data-barang');
+    });
+
+    document.getElementById('modalHapus').addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        document.getElementById('hapusId').value          = btn.getAttribute('data-id');
+        document.getElementById('hapusNama').textContent  = btn.getAttribute('data-nama');
+        document.getElementById('hapusBarang').textContent = btn.getAttribute('data-barang');
+    });
+})();
+</script>
+</body>
+</html>

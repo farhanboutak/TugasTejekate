@@ -1,10 +1,30 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$is_register = isset($_GET['mode']) && $_GET['mode'] === 'register';
+$pesan = isset($_GET['pesan']) && is_string($_GET['pesan']) ? $_GET['pesan'] : '';
+$notifikasi = [
+    'gagal' => ['error', 'Login belum berhasil', 'Username atau password yang kamu masukkan salah.'],
+    'daftar_sukses' => ['success', 'Pendaftaran berhasil', 'Akun kamu sudah dibuat. Silakan masuk menggunakan akun tersebut.'],
+    'username_terpakai' => ['error', 'Username sudah digunakan', 'Silakan pilih username lain.'],
+    'daftar_invalid' => ['error', 'Data belum valid', 'Periksa kembali nama, username, dan password yang kamu masukkan.'],
+    'daftar_csrf' => ['error', 'Permintaan tidak valid', 'Muat ulang halaman lalu coba daftar kembali.'],
+    'daftar_gagal' => ['error', 'Pendaftaran belum berhasil', 'Terjadi kesalahan saat membuat akun. Silakan coba lagi.'],
+][$pesan] ?? null;
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Masuk ke SIMBAR untuk mengelola inventaris dan peminjaman barang.">
-    <title>Masuk — SIMBAR</title>
+    <meta name="description" content="<?= $is_register ? 'Daftar akun SIMBAR untuk meminjam barang.' : 'Masuk ke SIMBAR untuk mengelola inventaris dan peminjaman barang.' ?>">
+    <title><?= $is_register ? 'Daftar' : 'Masuk' ?> — SIMBAR</title>
     <style>
         :root {
             color-scheme: light;
@@ -184,6 +204,12 @@
             font-size: 13px;
         }
 
+        .alert-success {
+            border-color: #c9e6d3;
+            background: #eff9f1;
+            color: #28643a;
+        }
+
         .alert strong {
             display: block;
             margin-bottom: 1px;
@@ -279,6 +305,23 @@
             color: var(--brand);
         }
 
+        .auth-switch {
+            margin: 19px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .auth-switch a {
+            color: var(--brand);
+            font-weight: 700;
+        }
+
+        .auth-switch a:hover {
+            color: var(--brand-dark);
+            text-decoration: underline;
+        }
+
         @media (max-width: 680px) {
             body {
                 padding: 18px 14px;
@@ -346,18 +389,47 @@
             <div class="intro-footer">Pengelolaan yang jelas dimulai dari sini.</div>
         </section>
 
-        <section class="form-panel" aria-labelledby="login-heading">
+        <section class="form-panel" aria-labelledby="form-heading">
             <div class="form-content">
-                <h2 id="login-heading">Selamat datang</h2>
-                <p class="form-description">Masuk ke akun SIMBAR untuk melanjutkan.</p>
+                <h2 id="form-heading"><?= $is_register ? 'Buat akun baru' : 'Selamat datang' ?></h2>
+                <p class="form-description"><?= $is_register ? 'Daftar sebagai peminjam untuk mulai menggunakan SIMBAR.' : 'Masuk ke akun SIMBAR untuk melanjutkan.' ?></p>
 
-                <?php if (isset($_GET['pesan']) && $_GET['pesan'] === 'gagal'): ?>
-                    <div class="alert" role="alert">
-                        <span aria-hidden="true">!</span>
-                        <span><strong>Login belum berhasil</strong>Username atau password yang kamu masukkan salah.</span>
+                <?php if ($notifikasi): ?>
+                    <div class="alert<?= $notifikasi[0] === 'success' ? ' alert-success' : '' ?>" role="alert">
+                        <span aria-hidden="true"><?= $notifikasi[0] === 'success' ? '✓' : '!' ?></span>
+                        <span><strong><?= htmlspecialchars($notifikasi[1]) ?></strong><?= htmlspecialchars($notifikasi[2]) ?></span>
                     </div>
                 <?php endif; ?>
 
+                <?php if ($is_register): ?>
+                <form action="register_proses.php" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+                    <div class="field">
+                        <label for="nama">Nama lengkap</label>
+                        <input type="text" id="nama" name="nama" placeholder="Masukkan nama lengkap" autocomplete="name" maxlength="100" required autofocus>
+                    </div>
+                    <div class="field">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" placeholder="3–50 karakter: huruf, angka, titik, _ atau -" autocomplete="username" minlength="3" maxlength="50" pattern="[A-Za-z0-9._-]{3,50}" required>
+                    </div>
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <div class="password-wrap">
+                            <input type="password" id="password" name="password" placeholder="Minimal 8 karakter" autocomplete="new-password" minlength="8" maxlength="72" required>
+                            <button class="toggle-password" type="button" data-password-target="password" aria-controls="password" aria-pressed="false">Lihat</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="password_confirmation">Ulangi password</label>
+                        <div class="password-wrap">
+                            <input type="password" id="password_confirmation" name="password_confirmation" placeholder="Masukkan ulang password" autocomplete="new-password" minlength="8" maxlength="72" required>
+                            <button class="toggle-password" type="button" data-password-target="password_confirmation" aria-controls="password_confirmation" aria-pressed="false">Lihat</button>
+                        </div>
+                    </div>
+                    <button class="submit-button" type="submit">Buat akun peminjam</button>
+                </form>
+                <p class="auth-switch">Sudah punya akun? <a href="login.php">Masuk</a></p>
+                <?php else: ?>
                 <form action="login_proses.php" method="POST">
                     <div class="field">
                         <label for="username">Username</label>
@@ -367,25 +439,28 @@
                         <label for="password">Password</label>
                         <div class="password-wrap">
                             <input type="password" id="password" name="password" placeholder="Masukkan password" autocomplete="current-password" required>
-                            <button class="toggle-password" type="button" aria-controls="password" aria-pressed="false">Lihat</button>
+                            <button class="toggle-password" type="button" data-password-target="password" aria-controls="password" aria-pressed="false">Lihat</button>
                         </div>
                     </div>
                     <button class="submit-button" type="submit">Masuk ke akun</button>
                 </form>
+                <p class="auth-switch">Belum punya akun? <a href="login.php?mode=register">Daftar sekarang</a></p>
+                <?php endif; ?>
 
                 <a class="back-link" href="index.php">← Kembali ke beranda</a>
             </div>
         </section>
     </main>
     <script>
-        const passwordInput = document.getElementById('password');
-        const togglePassword = document.querySelector('.toggle-password');
+        document.querySelectorAll('.toggle-password').forEach((togglePassword) => {
+            const passwordInput = document.getElementById(togglePassword.dataset.passwordTarget);
 
-        togglePassword.addEventListener('click', () => {
-            const isVisible = passwordInput.type === 'text';
-            passwordInput.type = isVisible ? 'password' : 'text';
-            togglePassword.textContent = isVisible ? 'Lihat' : 'Sembunyikan';
-            togglePassword.setAttribute('aria-pressed', String(!isVisible));
+            togglePassword.addEventListener('click', () => {
+                const isVisible = passwordInput.type === 'text';
+                passwordInput.type = isVisible ? 'password' : 'text';
+                togglePassword.textContent = isVisible ? 'Lihat' : 'Sembunyikan';
+                togglePassword.setAttribute('aria-pressed', String(!isVisible));
+            });
         });
     </script>
 </body>

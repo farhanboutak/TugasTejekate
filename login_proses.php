@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header("Location: petugas/index.php");
                 exit();
             } elseif ($user['role'] == 'peminjam') {
-                header("Location: peminjam/index.php");
+                header("Location: peminjaman/index.php");
                 exit();
             }
         } else {
