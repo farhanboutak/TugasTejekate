@@ -1,3 +1,2 @@
 # TugasTejekate
-Ini Tugas dari Pak Fera
-Iqup
+Ini Tugas dari Pak Fera Zulkarnain
