@@ -311,7 +311,15 @@ $csrf = $_SESSION['csrf_token'];
             .user-chip { display: none; }
             .page-heading { align-items: flex-start; flex-direction: column; }
             .panel-body { padding: 16px; }
-            .table { min-width: 720px; }
+            .table-responsive { overflow: visible; }
+            .table { display: block; }
+            .table thead { display: none; }
+            .table tbody { display: grid; gap: 9px; padding: 10px; }
+            .table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px 10px; border: 1px solid var(--line); border-radius: 11px; background: var(--white); }
+            .table tbody td { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 7px 4px; border: 0; text-align: left !important; }
+            .table tbody td::before { content: attr(data-label); color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+            .table tbody td:first-child, .table tbody td:last-child { grid-column: 1 / -1; }
+            .table tbody td:last-child .btn { margin-bottom: 4px; }
         }
     </style>
 </head>
@@ -424,13 +432,13 @@ $csrf = $_SESSION['csrf_token'];
                                 $role_class = $user['role'] === 'admin' ? 'admin' : ($user['role'] === 'petugas' ? 'petugas' : '');
                                 ?>
                                 <tr>
-                                    <td>
+                                    <td data-label="Pengguna">
                                         <div class="user-name"><?= h($user['nama']) ?><?= $is_current_user ? ' <span class="text-muted fw-normal">(kamu)</span>' : '' ?></div>
                                         <div class="user-username">@<?= h($user['username']) ?></div>
                                     </td>
-                                    <td><span class="role-badge <?= h($role_class) ?>"><?= h($role_labels[$user['role']] ?? $user['role']) ?></span></td>
-                                    <td><?= h(date('d M Y', strtotime($user['created_at']))) ?></td>
-                                    <td class="text-end text-nowrap">
+                                    <td data-label="Role"><span class="role-badge <?= h($role_class) ?>"><?= h($role_labels[$user['role']] ?? $user['role']) ?></span></td>
+                                    <td data-label="Terdaftar"><?= h(date('d M Y', strtotime($user['created_at']))) ?></td>
+                                    <td class="text-end text-nowrap" data-label="Aksi">
                                         <button
                                             type="button"
                                             class="btn btn-sm btn-outline-secondary"

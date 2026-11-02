@@ -182,6 +182,20 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
         }
 
         .logout:hover { background: var(--mint); }
+        .nav-links { display: flex; align-items: center; gap: 7px; }
+        .nav-links a {
+            min-height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 11px;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 9px;
+            color: var(--white);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .nav-links a:hover { background: rgba(255,255,255,.12); }
 
         main { padding: 38px 0 58px; }
 
@@ -335,7 +349,7 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
 
         .filters {
             display: grid;
-            grid-template-columns: minmax(210px, 1fr) minmax(170px, 230px) auto;
+            grid-template-columns: minmax(180px, 1fr) minmax(145px, 190px) repeat(2, minmax(125px, 145px)) 110px 105px;
             gap: 10px;
             padding: 15px 20px;
             border-bottom: 1px solid var(--line);
@@ -379,6 +393,7 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
 
         .refresh:hover { border-color: var(--brand); background: var(--mint); color: var(--brand-dark); }
         .table-wrap { overflow-x: auto; }
+        tr[hidden] { display: none !important; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
 
         th {
@@ -542,6 +557,8 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
 
         @media (max-width: 900px) {
             .summary { grid-template-columns: repeat(2, 1fr); }
+            .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .filters input[type="search"] { grid-column: 1 / -1; }
         }
 
         @media (max-width: 680px) {
@@ -549,6 +566,7 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
             .topbar-inner { min-height: 64px; }
             .topbar-user { gap: 8px; font-size: 11px; }
             .logout { min-height: 35px; padding: 0 11px; }
+            .nav-links a { min-height: 33px; padding: 0 8px; font-size: 10px; }
             main { padding: 28px 0 42px; }
             .summary { gap: 9px; }
             .summary-card { min-height: 82px; padding: 13px; }
@@ -556,13 +574,48 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
             .summary-value { font-size: 21px; }
             .summary-label { font-size: 9px; }
             .panel-header { align-items: flex-start; flex-direction: column; padding: 16px; }
-            .filters { grid-template-columns: 1fr; padding: 13px 16px; }
+            .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 13px 16px; }
+            .filters input[type="search"] { grid-column: 1 / -1; }
             .refresh { width: 100%; }
-            .table-wrap table { min-width: 880px; }
+            .table-wrap { overflow: visible; }
+            .table-wrap table { display: block; }
+            .table-wrap thead { display: none; }
+            .table-wrap tbody { display: grid; gap: 10px; padding: 10px; }
+            .table-wrap tbody tr {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                padding: 8px 10px;
+                border: 1px solid var(--line);
+                border-radius: 11px;
+                background: var(--white);
+            }
+            .table-wrap tbody td {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                padding: 7px 4px;
+                border: 0;
+            }
+            .table-wrap tbody td::before {
+                color: var(--muted);
+                content: attr(data-label);
+                font-size: 9px;
+                font-weight: 800;
+                letter-spacing: .05em;
+                text-transform: uppercase;
+            }
+            .table-wrap tbody td:first-child,
+            .table-wrap tbody td:nth-child(2),
+            .table-wrap tbody td:last-child { grid-column: 1 / -1; }
+            .actions { justify-content: flex-start; flex-wrap: wrap; }
+            .action-button { min-height: 38px; }
+            .table-wrap tbody tr.empty-row { display: block; }
+            .table-wrap tbody tr.empty-row td { display: block; }
         }
 
         @media (max-width: 390px) {
             .topbar-user .user-name { display: none; }
+            .nav-links a .nav-label { display: none; }
             .summary-icon { display: none; }
         }
 
@@ -590,6 +643,10 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
             </a>
             <div class="topbar-user">
                 <span class="user-name">Halo, <?= h($_SESSION['nama'] ?? 'Petugas') ?></span>
+                <nav class="nav-links" aria-label="Navigasi petugas">
+                    <a href="../admin/barang.php" aria-label="Inventaris"><span aria-hidden="true">▦</span><span class="nav-label">&nbsp; Inventaris</span></a>
+                    <a href="../akun.php" aria-label="Profil"><span aria-hidden="true">◉</span><span class="nav-label">&nbsp; Profil</span></a>
+                </nav>
                 <a class="logout" href="../logout.php">Keluar</a>
             </div>
         </div>
@@ -653,6 +710,9 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                     <option value="Ditolak">Ditolak</option>
                     <option value="Dikembalikan">Dikembalikan</option>
                 </select>
+                <input type="date" id="dateFrom" aria-label="Tanggal pinjam dari" title="Tanggal pinjam dari">
+                <input type="date" id="dateTo" aria-label="Tanggal pinjam sampai" title="Tanggal pinjam sampai">
+                <a class="refresh export-link" href="../admin/ekspor_peminjaman.php" id="exportLink">Ekspor CSV</a>
                 <a class="refresh" href="index.php">Muat ulang</a>
             </div>
 
@@ -685,18 +745,18 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                                     : substr($transaksi['nama_peminjam'], 0, 1);
                                 ?>
                                 <tr>
-                                    <td>
+                                    <td data-label="Peminjam">
                                         <div class="borrower">
                                             <span class="avatar"><?= h(function_exists('mb_strtoupper') ? mb_strtoupper($inisial, 'UTF-8') : strtoupper($inisial)) ?></span>
                                             <span><?= h($transaksi['nama_peminjam']) ?></span>
                                         </div>
                                     </td>
-                                    <td><span class="item-name"><?= h($transaksi['nama_barang']) ?></span></td>
-                                    <td><?= h(tanggal_indonesia($transaksi['tanggal_pinjam'])) ?></td>
-                                    <td><?= h(tanggal_indonesia($transaksi['tanggal_kembali'])) ?></td>
-                                    <td class="quantity"><?= (int)$transaksi['jumlah_pinjam'] ?></td>
-                                    <td><span class="status <?= h($status_css) ?>"><?= h($status) ?></span></td>
-                                    <td>
+                                    <td data-label="Barang"><span class="item-name"><?= h($transaksi['nama_barang']) ?></span></td>
+                                    <td data-label="Tanggal pinjam" data-date="<?= h($transaksi['tanggal_pinjam']) ?>"><?= h(tanggal_indonesia($transaksi['tanggal_pinjam'])) ?></td>
+                                    <td data-label="Tanggal kembali" data-date="<?= h($transaksi['tanggal_kembali']) ?>"><?= h(tanggal_indonesia($transaksi['tanggal_kembali'])) ?></td>
+                                    <td class="quantity" data-label="Jumlah"><?= (int)$transaksi['jumlah_pinjam'] ?></td>
+                                    <td data-label="Status"><span class="status <?= h($status_css) ?>"><?= h($status) ?></span></td>
+                                    <td data-label="Aksi">
                                         <div class="actions">
                                             <?php if ($status === 'Pending'): ?>
                                                 <button class="action-button approve" type="button" title="Setujui pengajuan"
@@ -756,6 +816,9 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
         (function () {
             const search = document.getElementById('searchInput');
             const filter = document.getElementById('statusFilter');
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            const exportLink = document.getElementById('exportLink');
             const table = document.getElementById('transactionTable');
             const count = document.getElementById('rowCount');
 
@@ -764,24 +827,37 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
 
                 const query = search.value.trim().toLocaleLowerCase('id');
                 const status = filter.value.toLocaleLowerCase('id');
+                const from = dateFrom.value;
+                const to = dateTo.value;
                 let visible = 0;
 
                 table.querySelectorAll('tbody tr').forEach((row) => {
                     const rowStatus = row.cells[5].textContent.trim().toLocaleLowerCase('id');
+                    const date = row.cells[2].dataset.date || '';
                     const matches = row.textContent.toLocaleLowerCase('id').includes(query)
-                        && (!status || rowStatus === status);
+                        && (!status || rowStatus === status)
+                        && (!from || date >= from)
+                        && (!to || date <= to);
                     row.hidden = !matches;
                     if (matches) visible++;
                 });
 
                 count.textContent = String(visible);
+                const params = new URLSearchParams();
+                if (query) params.set('q', search.value.trim());
+                if (filter.value) params.set('status', filter.value);
+                if (from) params.set('dari', from);
+                if (to) params.set('sampai', to);
+                const queryString = params.toString();
+                exportLink.href = '../admin/ekspor_peminjaman.php' + (queryString ? '?' + queryString : '');
             }
 
             search.addEventListener('input', applyFilters);
             filter.addEventListener('change', applyFilters);
+            dateFrom.addEventListener('change', applyFilters);
+            dateTo.addEventListener('change', applyFilters);
 
             const modal = document.getElementById('actionModal');
-            const form = document.getElementById('actionForm');
             const confirm = document.getElementById('confirmAction');
             let lastTrigger = null;
 

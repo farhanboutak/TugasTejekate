@@ -31,6 +31,7 @@ CREATE TABLE `barang` (
   `id` int(11) NOT NULL,
   `nama_barang` varchar(100) NOT NULL,
   `kategori` varchar(50) NOT NULL,
+  `foto` varchar(255) DEFAULT NULL,
   `stok` int(11) NOT NULL DEFAULT 0,
   `kondisi` enum('Baik','Rusak Ringan') NOT NULL DEFAULT 'Baik',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()

@@ -11,9 +11,11 @@ $csrf = $_SESSION['csrf_token'];
 
 $data_peminjaman = [];
 $error_message   = null;
+$total_barang = 0;
+$total_pengguna = 0;
 
 try {
-    $sql = "SELECT peminjaman.id, users.nama AS nama_peminjam, barang.nama_barang,
+    $sql = "SELECT peminjaman.id, users.nama AS nama_peminjam, barang.nama_barang, barang.foto,
                    peminjaman.tanggal_pinjam, peminjaman.tanggal_kembali,
                    peminjaman.jumlah_pinjam, peminjaman.status
             FROM peminjaman
@@ -22,6 +24,8 @@ try {
             ORDER BY peminjaman.id DESC";
     $stmt = $pdo->query($sql);
     $data_peminjaman = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $total_barang = (int)$pdo->query('SELECT COUNT(*) FROM barang')->fetchColumn();
+    $total_pengguna = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
 } catch (PDOException $e) {
     $error_message = "Gagal memuat data peminjaman. Silakan coba lagi.";
 }
@@ -168,6 +172,22 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             color: var(--brand);
             font-size: 1.15rem;
         }
+        .admin-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 24px;
+            padding: 22px 24px;
+            border: 1px solid #d5e7df;
+            border-radius: 16px;
+            background: linear-gradient(115deg, #eff7f2, #fff 72%);
+            box-shadow: 0 8px 24px rgba(29, 55, 62, .04);
+        }
+        .admin-heading .eyebrow { margin: 0 0 4px; color: var(--brand); font-size: .68rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+        .admin-heading h1 { margin: 0 0 4px; font-size: clamp(1.35rem, 3vw, 1.8rem); font-weight: 750; letter-spacing: -.045em; }
+        .admin-heading p:last-child { margin: 0; color: var(--muted); font-size: .86rem; }
+        .admin-heading .btn { flex: 0 0 auto; padding: .65rem 1rem; }
 
         .stat-card {
             position: relative;
@@ -209,6 +229,38 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             background-color: var(--mint) !important;
             color: var(--brand) !important;
         }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: -8px 0 22px;
+        }
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: var(--white);
+            color: var(--ink);
+            text-decoration: none;
+            transition: border-color .2s ease, transform .2s ease;
+        }
+        .quick-link:hover { transform: translateY(-1px); border-color: var(--brand); color: var(--brand-dark); }
+        .quick-link-icon {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            flex: 0 0 auto;
+            place-items: center;
+            border-radius: 11px;
+            background: var(--mint);
+            color: var(--brand);
+        }
+        .quick-link strong { display: block; font-size: 13px; }
+        .quick-link small { color: var(--muted); font-size: 11px; }
 
         .filter-card {
             padding: 16px !important;
@@ -297,6 +349,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             color: var(--brand);
         }
         .barang-cell { color: var(--ink); }
+        .barang-cell { display: flex; align-items: center; gap: 10px; min-width: 175px; }
+        .barang-thumb { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: #f2f7f4; color: var(--brand); }
+        .barang-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .barang-cell i { color: var(--brand); }
         .badge-status {
             padding: .4rem .7rem;
@@ -337,23 +392,66 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
 
         @media (max-width: 767.98px) {
             .navbar-custom .container { min-height: 64px; }
-            .table-card .table { min-width: 820px; }
+            .admin-heading { align-items: flex-start; }
         }
 
         @media (max-width: 575.98px) {
+            .navbar-custom .container { gap: 8px !important; }
+            .navbar-custom .container > .d-flex { gap: .35rem !important; }
             .navbar-custom .navbar-brand { font-size: .95rem; }
             .navbar-custom .navbar-brand i {
                 width: 34px;
                 height: 34px;
                 margin-right: .55rem !important;
             }
+            .navbar-custom .nav-label { display: none; }
+            .navbar-custom .btn { padding-right: .55rem !important; padding-left: .55rem !important; }
+            .admin-heading { flex-direction: column; padding: 18px; }
+            .admin-heading .btn { width: 100%; }
             .user-chip { display: none !important; }
             .stat-card .card-body { min-height: 88px; padding: 14px; }
             .stat-icon { width: 38px; height: 38px; font-size: 1rem; }
             .stat-value { font-size: 1.4rem; }
             .stat-label { font-size: .64rem; }
             .filter-card { padding: 12px !important; }
-            .table-card .table { min-width: 780px; }
+            .quick-links { gap: 8px; }
+            .quick-link { align-items: flex-start; padding: 12px; }
+            .quick-link-icon { width: 33px; height: 33px; }
+            .table-responsive { overflow: visible; }
+            .table-card .table { display: block; }
+            .table-card thead { display: none; }
+            .table-card tbody { display: grid; gap: 10px; padding: 10px; }
+            .table-card tbody tr:not(.empty-row) {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                padding: 8px 10px;
+                border: 1px solid var(--line);
+                border-radius: 11px;
+                background: var(--white);
+            }
+            .table-card tbody tr:not(.empty-row) td {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                padding: 7px 4px;
+                border: 0;
+                text-align: left !important;
+            }
+            .table-card tbody tr:not(.empty-row) td::before {
+                color: var(--muted);
+                content: attr(data-label);
+                font-size: 9px;
+                font-weight: 800;
+                letter-spacing: .05em;
+                text-transform: uppercase;
+            }
+            .table-card tbody tr:not(.empty-row) td:first-child { display: none; }
+            .table-card tbody tr:not(.empty-row) td:nth-child(2),
+            .table-card tbody tr:not(.empty-row) td:nth-child(3),
+            .table-card tbody tr:not(.empty-row) td:last-child { grid-column: 1 / -1; }
+            .table-card tbody tr:not(.empty-row) td:last-child .d-inline-flex { flex-wrap: wrap; }
+            .table-card tbody .empty-row { display: block; }
+            .table-card tbody .empty-row td { display: block; width: 100%; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -377,8 +475,14 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             <span class="user-chip text-white d-none d-md-inline-flex align-items-center">
                 <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($nama_admin) ?>
             </span>
-            <a href="pengguna.php" class="btn btn-sm btn-outline-light rounded-pill px-3">
-                <i class="bi bi-people me-1"></i><span>Pengguna</span>
+            <a href="pengguna.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola pengguna">
+                <i class="bi bi-people me-1"></i><span class="nav-label">Pengguna</span>
+            </a>
+            <a href="barang.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola inventaris">
+                <i class="bi bi-box-seam me-1"></i><span class="nav-label">Inventaris</span>
+            </a>
+            <a href="../akun.php" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                <i class="bi bi-person-gear me-1"></i><span class="d-none d-md-inline">Profil</span>
             </a>
             <a href="../logout.php" class="btn btn-sm btn-light rounded-pill px-3">
                 <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Keluar</span>
@@ -404,9 +508,20 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
         </div>
     <?php endif; ?>
 
-    <h3 class="page-title mb-4 d-flex align-items-center">
+    <section class="admin-heading" aria-labelledby="admin-title">
+        <div>
+            <p class="eyebrow">Area administrasi</p>
+            <h1 id="admin-title">Selamat datang, <?= htmlspecialchars($nama_admin, ENT_QUOTES, 'UTF-8') ?></h1>
+            <p>Pantau peminjaman, kelola inventaris, dan atur akun SIMBAR dari satu tempat.</p>
+        </div>
+        <a href="barang.php" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Kelola inventaris
+        </a>
+    </section>
+
+    <h2 class="page-title d-flex align-items-center">
         <i class="bi bi-clipboard-data-fill"></i>Data Transaksi Peminjaman
-    </h3>
+    </h2>
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
@@ -463,6 +578,17 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
         </div>
     </div>
 
+    <div class="quick-links">
+        <a class="quick-link" href="barang.php">
+            <span class="quick-link-icon"><i class="bi bi-box-seam"></i></span>
+            <span><strong>Kelola inventaris</strong><small><?= $total_barang ?> jenis barang</small></span>
+        </a>
+        <a class="quick-link" href="pengguna.php">
+            <span class="quick-link-icon"><i class="bi bi-people"></i></span>
+            <span><strong>Kelola pengguna</strong><small><?= $total_pengguna ?> akun terdaftar</small></span>
+        </a>
+    </div>
+
     <div class="filter-card p-3 mb-3 shadow-sm">
         <div class="row g-2">
             <div class="col-md-5">
@@ -481,7 +607,18 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                     <option value="Dikembalikan">Dikembalikan</option>
                 </select>
             </div>
-            <div class="col-md-3 text-md-end">
+            <div class="col-6 col-md-2">
+                <input type="date" id="dateFrom" class="form-control" aria-label="Tanggal pinjam dari" title="Tanggal pinjam dari">
+            </div>
+            <div class="col-6 col-md-2">
+                <input type="date" id="dateTo" class="form-control" aria-label="Tanggal pinjam sampai" title="Tanggal pinjam sampai">
+            </div>
+            <div class="col-6 col-md-2">
+                <a href="ekspor_peminjaman.php" id="exportLink" class="btn btn-primary w-100">
+                    <i class="bi bi-download me-1"></i>Ekspor CSV
+                </a>
+            </div>
+            <div class="col-6 col-md-2 text-md-end">
                 <a href="index.php" class="btn btn-outline-secondary w-100">
                     <i class="bi bi-arrow-clockwise me-1"></i> Muat Ulang
                 </a>
@@ -506,7 +643,7 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                 </thead>
                 <tbody>
                     <?php if (empty($data_peminjaman)): ?>
-                        <tr>
+                        <tr class="empty-row">
                             <td colspan="8" class="text-center text-muted py-5">
                                 <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
                                 <div class="fw-semibold">Belum ada data transaksi peminjaman.</div>
@@ -518,26 +655,32 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                             $inisial = strtoupper(mb_substr($row['nama_peminjam'], 0, 1));
                         ?>
                             <tr>
-                                <td class="text-center text-muted"><?= $no++ ?></td>
-                                <td>
+                                <td class="text-center text-muted" data-label="No"><?= $no++ ?></td>
+                                <td data-label="Peminjam">
                                     <div class="peminjam-cell">
                                         <div class="avatar"><?= htmlspecialchars($inisial) ?></div>
                                         <span><?= htmlspecialchars($row['nama_peminjam']) ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Nama Barang">
                                     <div class="barang-cell">
-                                        <i class="bi bi-box-seam"></i>
-                                        <span><?= htmlspecialchars($row['nama_barang']) ?></span>
+                                        <span class="barang-thumb">
+                                            <?php if (!empty($row['foto'])): ?>
+                                                <img src="../uploads/barang/<?= htmlspecialchars($row['foto'], ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+                                            <?php else: ?>
+                                                <i class="bi bi-box-seam" aria-hidden="true"></i>
+                                            <?php endif; ?>
+                                        </span>
+                                        <span><?= htmlspecialchars($row['nama_barang'], ENT_QUOTES, 'UTF-8') ?></span>
                                     </div>
                                 </td>
-                                <td><?= format_tanggal($row['tanggal_pinjam']) ?></td>
-                                <td><?= format_tanggal($row['tanggal_kembali']) ?></td>
-                                <td class="text-center">
+                                <td data-label="Tanggal Pinjam" data-date="<?= htmlspecialchars($row['tanggal_pinjam'], ENT_QUOTES, 'UTF-8') ?>"><?= format_tanggal($row['tanggal_pinjam']) ?></td>
+                                <td data-label="Tanggal Kembali" data-date="<?= htmlspecialchars($row['tanggal_kembali'], ENT_QUOTES, 'UTF-8') ?>"><?= format_tanggal($row['tanggal_kembali']) ?></td>
+                                <td class="text-center" data-label="Jumlah">
                                     <span class="badge bg-light text-dark border"><?= (int)$row['jumlah_pinjam'] ?></span>
                                 </td>
-                                <td class="text-center"><?= badge_status($row['status']) ?></td>
-                                <td class="text-center">
+                                <td class="text-center" data-label="Status"><?= badge_status($row['status']) ?></td>
+                                <td class="text-center" data-label="Aksi">
                                     <div class="d-inline-flex gap-1">
                                         <?php if ($row['status'] === 'Pending'): ?>
                                             <button type="button" class="btn btn-success btn-aksi"
@@ -656,6 +799,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
 (function () {
     const search = document.getElementById('searchInput');
     const filter = document.getElementById('statusFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const exportLink = document.getElementById('exportLink');
     const table  = document.getElementById('dataTable');
     const rows   = table.querySelectorAll('tbody tr');
     const countEl = document.getElementById('rowCount');
@@ -663,6 +809,8 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
     function applyFilter() {
         const q = search.value.toLowerCase();
         const s = filter.value.toLowerCase();
+        const from = dateFrom.value;
+        const to = dateTo.value;
         let visible = 0;
 
         rows.forEach(row => {
@@ -670,19 +818,30 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
 
             const text = row.textContent.toLowerCase();
             const statusBadge = row.cells[6]?.textContent.trim().toLowerCase() || '';
+            const date = row.cells[3]?.dataset.date || '';
             const matchText   = !q || text.includes(q);
             const matchStatus = !s || statusBadge === s;
+            const matchDate = (!from || date >= from) && (!to || date <= to);
 
-            const show = matchText && matchStatus;
+            const show = matchText && matchStatus && matchDate;
             row.style.display = show ? '' : 'none';
             if (show) visible++;
         });
 
         if (countEl) countEl.textContent = visible;
+        const params = new URLSearchParams();
+        if (q) params.set('q', search.value.trim());
+        if (filter.value) params.set('status', filter.value);
+        if (from) params.set('dari', from);
+        if (to) params.set('sampai', to);
+        const queryString = params.toString();
+        exportLink.href = 'ekspor_peminjaman.php' + (queryString ? '?' + queryString : '');
     }
 
     search.addEventListener('input', applyFilter);
     filter.addEventListener('change', applyFilter);
+    dateFrom.addEventListener('change', applyFilter);
+    dateTo.addEventListener('change', applyFilter);
 
     document.getElementById('modalAksi').addEventListener('show.bs.modal', function (event) {
         const btn = event.relatedTarget;
