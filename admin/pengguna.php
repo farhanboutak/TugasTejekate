@@ -331,8 +331,10 @@ $csrf = $_SESSION['csrf_token'];
             .table tbody td:last-child .btn { margin-bottom: 4px; }
         }
     </style>
+    <?php require __DIR__ . '/sidebar_styles.php'; ?>
 </head>
 <body>
+<?php $admin_sidebar_active = 'users'; require __DIR__ . '/sidebar.php'; ?>
     <nav class="navbar navbar-dark navbar-custom">
         <div class="container d-flex justify-content-between align-items-center gap-3">
             <a class="navbar-brand fw-bold text-white" href="index.php">

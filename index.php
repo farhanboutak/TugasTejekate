@@ -694,7 +694,7 @@
                     <h2>Siap mengelola barang lebih baik?</h2>
                     <p>Masuk ke SIMBAR untuk mulai mengelola inventaris dan peminjaman.</p>
                 </div>
-                <a class="button" href="simbar/login.php">Masuk ke SIMBAR <span aria-hidden="true">&nbsp;→</span></a>
+                <a class="button" href="login.php">Masuk ke SIMBAR <span aria-hidden="true">&nbsp;→</span></a>
             </div>
         </section>
     </main>

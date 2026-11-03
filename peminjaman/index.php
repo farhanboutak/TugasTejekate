@@ -302,6 +302,9 @@ $status_class = [
         }
 
         .logout:hover { background: var(--mint); }
+        .nav-links { display: flex; align-items: center; gap: 7px; }
+        .nav-links a { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 11px; border: 1px solid rgba(255,255,255,.55); border-radius: 9px; color: var(--white); font-size: 11px; font-weight: 700; }
+        .nav-links a:hover,.nav-links a[aria-current="page"] { background: rgba(255,255,255,.12); }
 
         main { padding: 38px 0 60px; }
 
@@ -684,6 +687,17 @@ $status_class = [
             }
         }
     </style>
+    <style>
+        @media (min-width: 992px) {
+            body { padding-left: 250px; }
+            .topbar { position: fixed; inset: 0 auto 0 0; z-index: 1000; width: 250px; height: 100vh; }
+            .topbar-inner { width: 100%; height: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column; padding: 24px 18px; }
+            .topbar-user { align-items: stretch; flex-direction: column; gap: 10px; margin-top: 28px; }
+            .nav-links { display: flex; align-items: stretch; flex-direction: column; gap: 7px; }
+            .nav-links a,.logout { justify-content: flex-start; }
+            .container { width: min(1120px, calc(100% - 40px)); }
+        }
+    </style>
 </head>
 <body>
     <header class="topbar">
@@ -699,7 +713,10 @@ $status_class = [
             </a>
             <div class="topbar-user">
                 <span class="user-name">Halo, <?= h($nama_peminjam) ?></span>
-                <a class="logout" href="../akun.php">Profil</a>
+                <nav class="nav-links" aria-label="Navigasi peminjam">
+                    <a href="index.php" aria-current="page">Dashboard</a>
+                    <a href="../akun.php">Profil</a>
+                </nav>
                 <a class="logout" href="../logout.php">Keluar</a>
             </div>
         </div>

@@ -635,6 +635,17 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
             }
         }
     </style>
+    <style>
+        @media (min-width: 992px) {
+            body { padding-left: 250px; }
+            .topbar { position: fixed; inset: 0 auto 0 0; z-index: 1000; width: 250px; height: 100vh; }
+            .topbar-inner { width: 100%; height: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column; padding: 24px 18px; }
+            .topbar-user { align-items: stretch; flex-direction: column; gap: 12px; margin-top: 28px; }
+            .nav-links { align-items: stretch; flex-direction: column; }
+            .nav-links a,.logout { justify-content: flex-start; }
+            .container { width: min(1120px, calc(100% - 40px)); }
+        }
+    </style>
 </head>
 <body>
     <header class="topbar">

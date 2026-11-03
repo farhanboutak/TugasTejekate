@@ -228,6 +228,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
         .stat-icon {
             width: 44px;
             height: 44px;
+            display: grid;
+            flex: 0 0 auto;
+            place-items: center;
             border-radius: 13px;
             font-size: 1.15rem;
         }
@@ -521,8 +524,10 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             }
         }
     </style>
+    <?php require __DIR__ . '/sidebar_styles.php'; ?>
 </head>
 <body>
+<?php $admin_sidebar_active = 'dashboard'; require __DIR__ . '/sidebar.php'; ?>
 
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
     <div class="container">

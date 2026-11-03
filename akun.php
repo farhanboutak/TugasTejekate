@@ -171,14 +171,33 @@ $csrf = $_SESSION['csrf_token'];
         .actions a,.actions button { min-height:42px; display:inline-flex; align-items:center; justify-content:center; padding:0 16px; border:1px solid var(--line); border-radius:9px; background:var(--white); color:var(--muted); cursor:pointer; font:inherit; font-size:12px; font-weight:700; text-decoration:none; }
         .actions button { border-color:var(--brand); background:var(--brand); color:var(--white); }
         .actions button:hover { background:var(--brand-dark); }
+        .side-links { display:flex; align-items:center; gap:7px; }
+        .side-links a { min-height:38px; display:inline-flex; align-items:center; padding:0 12px; border:1px solid rgba(255,255,255,.35); border-radius:9px; color:rgba(255,255,255,.9); font-size:12px; font-weight:700; text-decoration:none; }
+        .side-links a:hover,.side-links a[aria-current="page"] { background:rgba(255,255,255,.14); color:#fff; }
         :focus-visible { outline:3px solid rgba(20,107,104,.25); outline-offset:2px; }
+        @media(min-width:992px) { body{padding-left:250px}.topbar{position:fixed;inset:0 auto 0 0;z-index:1000;width:250px;height:100vh}.topbar-inner{width:100%;height:100%;align-items:stretch;justify-content:flex-start;flex-direction:column;padding:24px 18px}.side-links{align-items:stretch;flex-direction:column;margin-top:28px}.side-links a{justify-content:flex-start}.back{display:none}.container{width:min(940px,calc(100% - 40px))}main{padding-top:42px} }
+        @media(max-width:991.98px) { .side-links{display:none} }
         @media(max-width:600px) { .topbar-inner{min-height:60px;flex-wrap:wrap;padding:10px 0}.back{margin-left:auto} main{padding:28px 0}.card-header,form{padding:17px}.grid{grid-template-columns:1fr;gap:0}.actions{flex-direction:column-reverse}.actions a,.actions button{width:100%} }
     </style>
+    <?php if ($role === 'admin') { require __DIR__ . '/admin/sidebar_styles.php'; } ?>
 </head>
 <body>
+<?php if ($role === 'admin') { $admin_sidebar_active = 'profile'; require __DIR__ . '/admin/sidebar.php'; } ?>
     <header class="topbar">
         <div class="topbar-inner container">
             <a class="brand" href="<?= h($dashboard_url) ?>"><span class="brand-mark" aria-hidden="true">▦</span>SIMBAR · Profil</a>
+            <nav class="side-links" aria-label="Navigasi akun">
+                <a href="<?= h($dashboard_url) ?>">Dashboard</a>
+                <?php if ($role === 'admin'): ?>
+                    <a href="admin/barang.php">Inventaris</a>
+                    <a href="admin/pengguna.php">Pengguna</a>
+                    <a href="admin/log.php">Log aktivitas</a>
+                <?php elseif ($role === 'petugas'): ?>
+                    <a href="admin/barang.php">Inventaris</a>
+                <?php endif; ?>
+                <a href="akun.php" aria-current="page">Profil</a>
+                <a href="logout.php">Keluar</a>
+            </nav>
             <a class="back" href="<?= h($dashboard_url) ?>">Kembali ke dashboard</a>
         </div>
     </header>

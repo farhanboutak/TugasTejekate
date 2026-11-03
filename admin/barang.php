@@ -280,9 +280,20 @@ foreach ($semua_barang as $barang) {
             .inventory-card { display: grid; grid-template-columns: minmax(105px, .75fr) minmax(0, 1.25fr); }
             .inventory-photo { height: 100%; min-height: 100%; aspect-ratio: auto; }
         }
+        @media (min-width: 992px) {
+            body { padding-left: 250px; }
+            .topbar { position: fixed; inset: 0 auto 0 0; z-index: 1000; width: 250px; height: 100vh; }
+            .topbar-inner { width: 100%; height: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column; padding: 24px 18px; }
+            .top-actions { align-items: stretch; flex-direction: column; margin-top: 28px; }
+            .top-actions > span { margin: 0 0 12px; color: rgba(255,255,255,.82); }
+            .top-actions a { justify-content: flex-start; }
+            main.container { width: min(1120px, calc(100% - 40px)); }
+        }
     </style>
+<?php if ($_SESSION['role'] === 'admin') { require __DIR__ . '/sidebar_styles.php'; } ?>
 </head>
 <body>
+<?php if ($_SESSION['role'] === 'admin') { $admin_sidebar_active = 'inventory'; require __DIR__ . '/sidebar.php'; } ?>
     <header class="topbar">
         <div class="topbar-inner container">
             <a class="brand" href="<?= h($dashboard_url) ?>" aria-label="SIMBAR, kembali ke dashboard">
