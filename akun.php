@@ -1,7 +1,8 @@
 <?php
 require_once 'config/koneksi.php';
+require_once 'config/auth.php';
 
-if (empty($_SESSION['user_id']) || !in_array($_SESSION['role'] ?? '', ['admin', 'petugas', 'peminjam'], true)) {
+if (empty($_SESSION['user_id']) || empty($_SESSION['role'])) {
     header('Location: login.php');
     exit;
 }
@@ -13,11 +14,8 @@ function h($value): string
 
 $role = $_SESSION['role'];
 $user_id = (int)$_SESSION['user_id'];
-$dashboard_url = [
-    'admin' => 'admin/index.php',
-    'petugas' => 'petugas/index.php',
-    'peminjam' => 'peminjaman/index.php',
-][$role];
+$dashboard_url = simbar_dashboard_url($pdo, $role);
+$role_label = simbar_role_label($pdo, $role);
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -129,7 +127,6 @@ $messages = [
 ];
 $message_key = isset($_GET['pesan']) && is_string($_GET['pesan']) ? $_GET['pesan'] : '';
 $message = $messages[$message_key] ?? null;
-$role_label = ['admin' => 'Admin', 'petugas' => 'Petugas', 'peminjam' => 'Peminjam'][$role];
 $csrf = $_SESSION['csrf_token'];
 ?>
 <!DOCTYPE html>
@@ -146,8 +143,9 @@ $csrf = $_SESSION['csrf_token'];
         .topbar { background:var(--brand); color:var(--white); box-shadow:0 8px 24px rgba(16,86,83,.16); }
         .container { width:min(940px,calc(100% - 36px)); margin:0 auto; }
         .topbar-inner { min-height:66px; display:flex; align-items:center; justify-content:space-between; gap:15px; }
-        .brand { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:800; letter-spacing:.04em; text-decoration:none; }
+        .brand { display:flex; align-items:center; gap:10px; color:var(--white); font-size:15px; font-weight:800; letter-spacing:.04em; text-decoration:none; }
         .brand-mark { width:36px; height:36px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.25); border-radius:11px; background:rgba(255,255,255,.12); }
+        .brand-mark svg { width:22px; height:22px; display:block; }
         .back { color:var(--white); font-size:12px; font-weight:700; text-decoration:none; }
         main { padding:42px 0; }
         .eyebrow { margin:0 0 6px; color:var(--brand); font-size:10px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
@@ -179,21 +177,32 @@ $csrf = $_SESSION['csrf_token'];
         @media(max-width:991.98px) { .side-links{display:none} }
         @media(max-width:600px) { .topbar-inner{min-height:60px;flex-wrap:wrap;padding:10px 0}.back{margin-left:auto} main{padding:28px 0}.card-header,form{padding:17px}.grid{grid-template-columns:1fr;gap:0}.actions{flex-direction:column-reverse}.actions a,.actions button{width:100%} }
     </style>
-    <?php if ($role === 'admin') { require __DIR__ . '/admin/sidebar_styles.php'; } ?>
+    <?php require __DIR__ . '/admin/sidebar_styles.php'; ?>
 </head>
 <body>
-<?php if ($role === 'admin') { $admin_sidebar_active = 'profile'; require __DIR__ . '/admin/sidebar.php'; } ?>
+<?php $admin_sidebar_active = 'profile'; require __DIR__ . '/admin/sidebar.php'; ?>
     <header class="topbar">
         <div class="topbar-inner container">
-            <a class="brand" href="<?= h($dashboard_url) ?>"><span class="brand-mark" aria-hidden="true">▦</span>SIMBAR · Profil</a>
+            <a class="brand" href="<?= h($dashboard_url) ?>">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 8.5 12 4l8 4.5v9L12 22l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="m4.5 8.8 7.5 4.3 7.5-4.3M12 13.2V21" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>SIMBAR · Profil</span>
+            </a>
             <nav class="side-links" aria-label="Navigasi akun">
                 <a href="<?= h($dashboard_url) ?>">Dashboard</a>
-                <?php if ($role === 'admin'): ?>
+                <?php if (simbar_user_has_permission('inventory.manage')): ?>
                     <a href="admin/barang.php">Inventaris</a>
+                <?php endif; ?>
+                <?php if (simbar_user_has_permission('users.manage')): ?>
                     <a href="admin/pengguna.php">Pengguna</a>
+                    <a href="admin/peran.php">Role &amp; izin</a>
+                <?php endif; ?>
+                <?php if (simbar_user_has_permission('audit.view')): ?>
                     <a href="admin/log.php">Log aktivitas</a>
-                <?php elseif ($role === 'petugas'): ?>
-                    <a href="admin/barang.php">Inventaris</a>
                 <?php endif; ?>
                 <a href="akun.php" aria-current="page">Profil</a>
                 <a href="logout.php">Keluar</a>

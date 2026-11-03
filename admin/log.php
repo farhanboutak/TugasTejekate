@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin']);
+cek_akses('audit.view');
 
 function h($value): string
 {
@@ -140,11 +140,14 @@ if ($cari !== '') {
 <?php $admin_sidebar_active = 'log'; require __DIR__ . '/sidebar.php'; ?>
     <header class="topbar">
         <div class="topbar-inner container">
-            <a class="brand" href="index.php"><span class="brand-mark" aria-hidden="true"><i class="bi bi-box-seam"></i></span>SIMBAR <span style="font-weight:500;opacity:.72">/ Admin</span></a>
+            <a class="brand" href="log.php"><span class="brand-mark" aria-hidden="true"><i class="bi bi-box-seam"></i></span>SIMBAR <span style="font-weight:500;opacity:.72">/ Admin</span></a>
             <nav class="nav-links" aria-label="Navigasi admin">
-                <a href="index.php"><i class="bi bi-grid"></i> Dashboard</a>
-                <a href="barang.php"><i class="bi bi-box-seam"></i> Inventaris</a>
+                <?php if (simbar_user_has_permission('transactions.view')): ?><a href="index.php"><i class="bi bi-grid"></i> Dashboard</a><?php endif; ?>
+                <?php if (simbar_user_has_permission('inventory.manage')): ?><a href="barang.php"><i class="bi bi-box-seam"></i> Inventaris</a><?php endif; ?>
+                <?php if (simbar_user_has_permission('users.manage')): ?>
                 <a href="pengguna.php"><i class="bi bi-people"></i> Pengguna</a>
+                <a href="peran.php"><i class="bi bi-shield-lock"></i> Role &amp; izin</a>
+                <?php endif; ?>
                 <a class="active" href="log.php" aria-current="page"><i class="bi bi-clock-history"></i> Log aktivitas</a>
                 <a href="../akun.php"><i class="bi bi-person-gear"></i> Profil</a>
                 <a class="logout" href="../logout.php"><i class="bi bi-box-arrow-right"></i> Keluar</a>

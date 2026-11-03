@@ -1,5 +1,6 @@
 <?php
 require_once 'config/koneksi.php';
+require_once 'config/users.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: login.php?mode=register');
@@ -34,9 +35,7 @@ if (!$nama_valid || !$username_valid || !$password_valid || $password !== $passw
 }
 
 try {
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE username = :username LIMIT 1');
-    $stmt->execute([':username' => $username]);
-    if ($stmt->fetch(PDO::FETCH_ASSOC)) {
+    if (simbar_username_in_use($pdo, $username)) {
         header('Location: login.php?mode=register&pesan=username_terpakai');
         exit;
     }
@@ -48,22 +47,30 @@ try {
         exit;
     }
 
+    $pdo->beginTransaction();
+    $user_id = simbar_next_user_id($pdo);
     $stmt = $pdo->prepare(
-        'INSERT INTO users (nama, username, password, role)
-         VALUES (:nama, :username, :password, :role)'
+        'INSERT INTO users (id, nama, username, password, role)
+         VALUES (:id, :nama, :username, :password, :role)'
     );
     $stmt->execute([
+        ':id' => $user_id,
         ':nama' => $nama,
         ':username' => $username,
         ':password' => $password_hash,
         ':role' => 'peminjam',
     ]);
+    $pdo->commit();
 
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     header('Location: login.php?pesan=daftar_sukses');
     exit;
-} catch (PDOException $e) {
-    if ($e->getCode() === '23000') {
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
+    if ($e instanceof PDOException && simbar_is_duplicate_username($e)) {
         header('Location: login.php?mode=register&pesan=username_terpakai');
         exit;
     }

@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin']);
+cek_akses('transactions.view');
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -538,15 +538,16 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             <span class="user-chip text-white d-none d-md-inline-flex align-items-center">
                 <i class="bi bi-person-circle me-1"></i><?= htmlspecialchars($nama_admin) ?>
             </span>
-            <a href="pengguna.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola pengguna">
-                <i class="bi bi-people me-1"></i><span class="nav-label">Pengguna</span>
-            </a>
-            <a href="barang.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola inventaris">
-                <i class="bi bi-box-seam me-1"></i><span class="nav-label">Inventaris</span>
-            </a>
-            <a href="log.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Log aktivitas">
-                <i class="bi bi-clock-history me-1"></i><span class="nav-label">Log</span>
-            </a>
+            <?php if (simbar_user_has_permission('users.manage')): ?>
+                <a href="pengguna.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola pengguna"><i class="bi bi-people me-1"></i><span class="nav-label">Pengguna</span></a>
+                <a href="peran.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola role"><i class="bi bi-shield-lock me-1"></i><span class="nav-label">Role</span></a>
+            <?php endif; ?>
+            <?php if (simbar_user_has_permission('inventory.manage')): ?>
+                <a href="barang.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Kelola inventaris"><i class="bi bi-box-seam me-1"></i><span class="nav-label">Inventaris</span></a>
+            <?php endif; ?>
+            <?php if (simbar_user_has_permission('audit.view')): ?>
+                <a href="log.php" class="btn btn-sm btn-outline-light rounded-pill px-3" aria-label="Log aktivitas"><i class="bi bi-clock-history me-1"></i><span class="nav-label">Log</span></a>
+            <?php endif; ?>
             <a href="../akun.php" class="btn btn-sm btn-outline-light rounded-pill px-3">
                 <i class="bi bi-person-gear me-1"></i><span class="d-none d-md-inline">Profil</span>
             </a>
@@ -580,9 +581,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             <h1 id="admin-title">Selamat datang, <?= htmlspecialchars($nama_admin, ENT_QUOTES, 'UTF-8') ?></h1>
             <p>Pantau peminjaman, kelola inventaris, dan atur akun SIMBAR dari satu tempat.</p>
         </div>
-        <a href="barang.php" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Kelola inventaris
-        </a>
+        <?php if (simbar_user_has_permission('inventory.manage')): ?>
+            <a href="barang.php" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Kelola inventaris</a>
+        <?php endif; ?>
     </section>
 
     <h2 class="page-title d-flex align-items-center">
@@ -645,20 +646,27 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
     </div>
 
     <div class="quick-links">
+        <?php if (simbar_user_has_permission('inventory.manage')): ?>
         <a class="quick-link" href="barang.php">
             <span class="quick-link-icon"><i class="bi bi-box-seam"></i></span>
             <span><strong>Kelola inventaris</strong><small><?= $total_barang ?> jenis barang</small></span>
         </a>
+        <?php endif; ?>
+        <?php if (simbar_user_has_permission('users.manage')): ?>
         <a class="quick-link" href="pengguna.php">
             <span class="quick-link-icon"><i class="bi bi-people"></i></span>
             <span><strong>Kelola pengguna</strong><small><?= $total_pengguna ?> akun terdaftar</small></span>
         </a>
+        <?php endif; ?>
+        <?php if (simbar_user_has_permission('audit.view')): ?>
         <a class="quick-link" href="log.php">
             <span class="quick-link-icon"><i class="bi bi-clock-history"></i></span>
             <span><strong>Log aktivitas</strong><small>Lihat jejak perubahan admin</small></span>
         </a>
+        <?php endif; ?>
     </div>
 
+    <?php if (simbar_user_has_permission('audit.view')): ?>
     <section class="activity-panel" aria-labelledby="activity-title">
         <div class="activity-heading">
             <div><h2 id="activity-title">Aktivitas terbaru</h2><p>Jejak tindakan admin dan petugas</p></div>
@@ -694,6 +702,7 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             </div>
         <?php endif; ?>
     </section>
+    <?php endif; ?>
 
     <div class="filter-card p-3 mb-3 shadow-sm">
         <div class="row g-2 align-items-center">
@@ -725,9 +734,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
             </div>
             <div class="col-12 col-md-6 col-lg-2">
                 <div class="filter-actions">
-                    <a href="ekspor_peminjaman.php" id="exportLink" class="btn btn-primary" aria-label="Ekspor CSV" title="Ekspor CSV">
+                    <?php if (simbar_user_has_permission('transactions.export')): ?><a href="ekspor_peminjaman.php" id="exportLink" class="btn btn-primary" aria-label="Ekspor CSV" title="Ekspor CSV">
                         <i class="bi bi-download me-1"></i>CSV
-                    </a>
+                    </a><?php endif; ?>
                     <a href="index.php" class="btn btn-outline-secondary" aria-label="Muat ulang filter" title="Muat ulang filter">
                         <i class="bi bi-arrow-clockwise me-1"></i>Reset
                     </a>
@@ -792,6 +801,7 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                                 <td class="text-center" data-label="Status"><?= badge_status($row['status']) ?></td>
                                 <td class="text-center" data-label="Aksi">
                                     <div class="d-inline-flex gap-1">
+                                        <?php if (simbar_user_has_permission('transactions.manage')): ?>
                                         <?php if ($row['status'] === 'Pending'): ?>
                                             <button type="button" class="btn btn-success btn-aksi"
                                                 title="Setujui"
@@ -827,6 +837,8 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                                         <?php else: ?>
                                             <span class="text-muted small">-</span>
                                         <?php endif; ?>
+                                        <?php endif; ?>
+                                        <?php if (simbar_user_has_permission('transactions.delete')): ?>
                                         <button type="button" class="btn btn-outline-danger btn-aksi"
                                             title="Hapus"
                                             data-bs-toggle="modal" data-bs-target="#modalHapus"
@@ -835,6 +847,8 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                                             data-barang="<?= htmlspecialchars($row['nama_barang']) ?>">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        <?php endif; ?>
+                                        <?php if (!simbar_user_has_any_permission(['transactions.manage', 'transactions.delete'])): ?><span class="text-muted small">-</span><?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -945,7 +959,9 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
         if (from) params.set('dari', from);
         if (to) params.set('sampai', to);
         const queryString = params.toString();
-        exportLink.href = 'ekspor_peminjaman.php' + (queryString ? '?' + queryString : '');
+        if (exportLink) {
+            exportLink.href = 'ekspor_peminjaman.php' + (queryString ? '?' + queryString : '');
+        }
     }
 
     search.addEventListener('input', applyFilter);

@@ -3,11 +3,12 @@ require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 require_once '../config/audit.php';
 
-cek_akses(['admin', 'petugas']);
+cek_akses('transactions.manage');
 
 function kembali_ke_dashboard($pesan = null)
 {
-    $dashboard = $_SESSION['role'] === 'petugas' ? '../petugas/index.php' : 'index.php';
+    global $pdo;
+    $dashboard = '../' . simbar_dashboard_url($pdo, (string)$_SESSION['role']);
     if ($pesan !== null) {
         $dashboard .= '?pesan=' . urlencode($pesan);
     }

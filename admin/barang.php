@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin', 'petugas']);
+cek_akses('inventory.manage');
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -72,7 +72,7 @@ try {
 }
 
 $csrf = $_SESSION['csrf_token'];
-$dashboard_url = $_SESSION['role'] === 'admin' ? 'index.php' : '../petugas/index.php';
+$dashboard_url = '../' . simbar_dashboard_url($pdo, (string)$_SESSION['role']);
 $total_stok = 0;
 $total_tersedia = 0;
 $stok_menipis = 0;
@@ -290,10 +290,10 @@ foreach ($semua_barang as $barang) {
             main.container { width: min(1120px, calc(100% - 40px)); }
         }
     </style>
-<?php if ($_SESSION['role'] === 'admin') { require __DIR__ . '/sidebar_styles.php'; } ?>
+<?php if (simbar_user_has_any_permission(['transactions.view', 'inventory.manage', 'users.manage', 'audit.view'])) { require __DIR__ . '/sidebar_styles.php'; } ?>
 </head>
 <body>
-<?php if ($_SESSION['role'] === 'admin') { $admin_sidebar_active = 'inventory'; require __DIR__ . '/sidebar.php'; } ?>
+<?php if (simbar_user_has_any_permission(['transactions.view', 'inventory.manage', 'users.manage', 'audit.view'])) { $admin_sidebar_active = 'inventory'; require __DIR__ . '/sidebar.php'; } ?>
     <header class="topbar">
         <div class="topbar-inner container">
             <a class="brand" href="<?= h($dashboard_url) ?>" aria-label="SIMBAR, kembali ke dashboard">
@@ -310,8 +310,11 @@ foreach ($semua_barang as $barang) {
                 <span><?= h($_SESSION['nama'] ?? 'Pengguna') ?></span>
                 <a href="<?= h($dashboard_url) ?>">Dashboard</a>
                 <a href="barang.php" aria-current="page">Inventaris</a>
-                <?php if ($_SESSION['role'] === 'admin'): ?>
+                <?php if (simbar_user_has_permission('users.manage')): ?>
                     <a href="pengguna.php">Pengguna</a>
+                    <a href="peran.php">Role</a>
+                <?php endif; ?>
+                <?php if (simbar_user_has_permission('audit.view')): ?>
                     <a href="log.php">Log aktivitas</a>
                 <?php endif; ?>
                 <a href="../logout.php">Keluar</a>

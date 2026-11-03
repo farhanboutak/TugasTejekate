@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/auth.php';
 
 const REMEMBER_COOKIE_NAME = 'simbar_remember';
 const REMEMBER_TOKEN_LIFETIME = 2592000;
@@ -119,7 +120,7 @@ function remember_restore_session(PDO $pdo): void
     $_SESSION['role'] = $token['role'];
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-    if (in_array($token['role'], ['admin', 'petugas'], true)) {
+    if (simbar_role_has_any_permission($pdo, (string)$token['role'], ['transactions.manage', 'users.manage', 'audit.view'])) {
         require_once __DIR__ . '/audit.php';
         try {
             catat_aktivitas($pdo, 'login.diingat', 'auth', 'Sesi login dipulihkan dari perangkat tepercaya.', (int)$token['user_id'], [], [

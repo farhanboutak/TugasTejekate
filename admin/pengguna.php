@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin']);
+cek_akses('users.manage');
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -32,6 +32,8 @@ $pesan_key = isset($_GET['pesan']) && is_string($_GET['pesan']) ? $_GET['pesan']
 $pesan_info = $pesan_map[$pesan_key] ?? null;
 
 $users = [];
+$roles = [];
+$role_labels = [];
 $error_message = null;
 $current_user_id = (int)$_SESSION['user_id'];
 
@@ -47,11 +49,15 @@ try {
     $error_message = 'Daftar pengguna belum dapat dimuat. Silakan muat ulang halaman.';
 }
 
-$role_labels = [
-    'admin' => 'Admin',
-    'petugas' => 'Petugas',
-    'peminjam' => 'Peminjam',
-];
+try {
+    $roles = $pdo->query('SELECT role_key, label FROM roles ORDER BY is_system DESC, label ASC')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($roles as $role_option) {
+        $role_labels[$role_option['role_key']] = $role_option['label'];
+    }
+} catch (PDOException $e) {
+    error_log('SIMBAR role list query failed: ' . $e->getMessage());
+    $error_message = 'Daftar role belum dapat dimuat. Jalankan migrasi role dinamis.';
+}
 $csrf = $_SESSION['csrf_token'];
 ?>
 <!DOCTYPE html>
@@ -337,7 +343,7 @@ $csrf = $_SESSION['csrf_token'];
 <?php $admin_sidebar_active = 'users'; require __DIR__ . '/sidebar.php'; ?>
     <nav class="navbar navbar-dark navbar-custom">
         <div class="container d-flex justify-content-between align-items-center gap-3">
-            <a class="navbar-brand fw-bold text-white" href="index.php">
+            <a class="navbar-brand fw-bold text-white" href="pengguna.php">
                 <span class="brand-mark me-2"><i class="bi bi-box-seam-fill"></i></span>
                 SIMBAR Admin
             </a>
@@ -345,10 +351,11 @@ $csrf = $_SESSION['csrf_token'];
                 <span class="user-chip d-none d-md-inline-flex align-items-center">
                     <i class="bi bi-person-circle me-1"></i><?= h($_SESSION['nama'] ?? 'Admin') ?>
                 </span>
-                <a href="index.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-grid me-1"></i><span>Dashboard</span></a>
-                <a href="barang.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-box-seam me-1"></i><span>Inventaris</span></a>
+                <?php if (simbar_user_has_permission('transactions.view')): ?><a href="index.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-grid me-1"></i><span>Dashboard</span></a><?php endif; ?>
+                <?php if (simbar_user_has_permission('inventory.manage')): ?><a href="barang.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-box-seam me-1"></i><span>Inventaris</span></a><?php endif; ?>
                 <a href="pengguna.php" class="btn btn-sm btn-light px-3" aria-current="page"><i class="bi bi-people me-1"></i><span>Pengguna</span></a>
-                <a href="log.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-clock-history me-1"></i><span>Log</span></a>
+                <a href="peran.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-shield-lock me-1"></i><span>Role</span></a>
+                <?php if (simbar_user_has_permission('audit.view')): ?><a href="log.php" class="btn btn-sm btn-outline-light px-3"><i class="bi bi-clock-history me-1"></i><span>Log</span></a><?php endif; ?>
                 <a href="../logout.php" class="btn btn-sm btn-light px-3">
                     <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Keluar</span>
                 </a>
@@ -363,9 +370,10 @@ $csrf = $_SESSION['csrf_token'];
                 <h1>Kelola pengguna</h1>
                 <p class="page-description">Tambah akun, atur role, perbarui profil, atau reset password.</p>
             </div>
-            <a href="index.php" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Kembali ke dashboard
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="peran.php" class="btn btn-outline-primary"><i class="bi bi-shield-lock me-1"></i>Kelola role</a>
+                <?php if (simbar_user_has_permission('transactions.view')): ?><a href="index.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali ke dashboard</a><?php endif; ?>
+            </div>
         </div>
 
         <?php if ($pesan_info): ?>
@@ -400,9 +408,9 @@ $csrf = $_SESSION['csrf_token'];
                     <div class="col-md-6 col-lg-2">
                         <label class="form-label" for="role">Role</label>
                         <select class="form-select" id="role" name="role" required>
-                            <option value="peminjam">Peminjam</option>
-                            <option value="petugas">Petugas</option>
-                            <option value="admin">Admin</option>
+                            <?php foreach ($roles as $role_option): ?>
+                                <option value="<?= h($role_option['role_key']) ?>"><?= h($role_option['label']) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="col-md-6 col-lg-2">
@@ -513,12 +521,12 @@ $csrf = $_SESSION['csrf_token'];
                     <div class="mb-3" id="editRoleGroup">
                         <label class="form-label" for="editRole">Role</label>
                         <select class="form-select" id="editRole" name="role" required>
-                            <option value="admin">Admin</option>
-                            <option value="petugas">Petugas</option>
-                            <option value="peminjam">Peminjam</option>
+                            <?php foreach ($roles as $role_option): ?>
+                                <option value="<?= h($role_option['role_key']) ?>"><?= h($role_option['label']) ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
-                    <input type="hidden" name="role" id="editOwnRole" value="admin" disabled>
+                    <input type="hidden" name="role" id="editOwnRole" value="" disabled>
                     <div>
                         <label class="form-label" for="editPassword">Password baru</label>
                         <input class="form-control" type="password" id="editPassword" name="password" minlength="8" maxlength="72" autocomplete="new-password">
@@ -572,6 +580,7 @@ $csrf = $_SESSION['csrf_token'];
             document.getElementById('editUsername').value = button.dataset.username;
             document.getElementById('editPassword').value = '';
             document.getElementById('editRole').value = button.dataset.role;
+            document.getElementById('editOwnRole').value = button.dataset.role;
             document.getElementById('editRoleGroup').hidden = isCurrentUser;
             document.getElementById('editRole').disabled = isCurrentUser;
             document.getElementById('editOwnRole').disabled = !isCurrentUser;

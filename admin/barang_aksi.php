@@ -3,7 +3,7 @@ require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 require_once '../config/audit.php';
 
-cek_akses(['admin', 'petugas']);
+cek_akses('inventory.manage');
 
 class FotoBarangException extends RuntimeException
 {
