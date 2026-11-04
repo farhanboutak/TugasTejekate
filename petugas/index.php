@@ -634,6 +634,20 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                 transition-duration: .01ms !important;
             }
         }
+
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+        .topbar { border-bottom:1px solid var(--line); background:rgba(255,255,255,.88); color:var(--ink); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
+        .brand { color:var(--ink); }
+        .brand-mark { border-color:var(--line); background:var(--mint); color:var(--brand); }
+        .topbar-user { color:var(--muted); }
+        .nav-links a { border-color:var(--line); color:var(--muted); }
+        .nav-links a:hover { background:var(--mint); color:var(--brand-dark); }
+        .logout { border-color:var(--line); background:var(--mint); color:var(--brand-dark); }
+        .summary-card,.panel { border-radius:20px; box-shadow:0 16px 42px rgba(29,55,62,.055); }
+        .filters { background:#fafbfa; }
+        th { background:#f7f8f7; }
+        .filters input,.filters select { border-radius:11px; }
+        @media (max-width:680px) { .topbar { backdrop-filter:none; } }
     </style>
 </head>
 <body>

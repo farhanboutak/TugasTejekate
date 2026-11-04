@@ -280,6 +280,21 @@ foreach ($semua_barang as $barang) {
             .inventory-card { display: grid; grid-template-columns: minmax(105px, .75fr) minmax(0, 1.25fr); }
             .inventory-photo { height: 100%; min-height: 100%; aspect-ratio: auto; }
         }
+
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+        .topbar { border-bottom:1px solid var(--line); background:rgba(255,255,255,.88); color:var(--ink); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
+        .brand { color:var(--ink); }
+        .brand-mark { border-color:var(--line); background:var(--mint); box-shadow:none; }
+        .brand-mark svg path { stroke:var(--brand); }
+        .brand-copy small { color:var(--muted); }
+        .top-actions a { border-color:var(--line); background:#fff; color:var(--muted); }
+        .top-actions a:hover,.top-actions a[aria-current="page"] { border-color:#c7e1d8; background:var(--mint); color:var(--brand-dark); }
+        .heading { border-color:var(--line); border-radius:22px; background:linear-gradient(120deg,#f1f7f3,#fff 72%); }
+        .panel,.summary-card,.inventory-card { border-radius:19px; }
+        .inventory-card { box-shadow:0 10px 28px rgba(29,55,62,.055); }
+        .inventory-photo { background:#f5f7f6; }
+        input,select { border-radius:11px; }
+        @media (max-width:600px) { .topbar { backdrop-filter:none; } .heading { border-radius:18px; } }
     </style>
 </head>
 <body>

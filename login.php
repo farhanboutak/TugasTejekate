@@ -469,6 +469,45 @@ $notifikasi = [
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
         }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        }
+
+        body::before {
+            display: none;
+        }
+
+        .login-layout {
+            border-color: rgba(23, 42, 58, .06);
+            border-radius: 28px;
+            box-shadow: 0 32px 90px rgba(29, 55, 62, .12), 0 2px 8px rgba(29, 55, 62, .035);
+        }
+
+        .intro {
+            background: linear-gradient(150deg, #176f6b 0%, #105653 100%);
+        }
+
+        .intro h1,
+        .form-content h2 {
+            letter-spacing: -.055em;
+        }
+
+        .field input {
+            border-radius: 12px;
+            background: #fcfdfc;
+        }
+
+        .submit-button {
+            border-radius: 999px;
+            box-shadow: 0 8px 20px rgba(20, 107, 104, .14);
+        }
+
+        @media (max-width: 680px) {
+            .login-layout {
+                border-radius: 22px;
+            }
+        }
     </style>
 </head>
 <body>

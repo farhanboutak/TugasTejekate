@@ -520,6 +520,18 @@ $nama_admin = $_SESSION['nama'] ?? 'Admin';
                 transition-duration: .01ms !important;
             }
         }
+
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+        .navbar-custom { border-bottom:1px solid var(--line); background:rgba(255,255,255,.88); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
+        .navbar-custom .navbar-brand { color:var(--ink)!important; }
+        .navbar-custom .navbar-brand i { border-color:var(--line); background:var(--mint); color:var(--brand); }
+        .navbar-custom .user-chip { background:#f2f4f3; color:var(--muted)!important; }
+        .navbar-custom .btn-outline-light { --bs-btn-color:var(--muted); --bs-btn-border-color:var(--line); --bs-btn-hover-bg:var(--mint); --bs-btn-hover-color:var(--brand-dark); --bs-btn-hover-border-color:var(--brand); }
+        .navbar-custom .btn-light { border-color:var(--line); background:var(--mint); color:var(--brand-dark); }
+        .admin-heading { border-color:var(--line); border-radius:22px; background:linear-gradient(120deg,#f1f7f3,#fff 72%); }
+        .stat-card,.quick-link,.activity-panel,.table-card,.filter-card { border-radius:19px; }
+        .table-card thead th { background:#f7f8f7; }
+        @media (max-width:575.98px) { .navbar-custom { backdrop-filter:none; } .admin-heading { border-radius:18px; } }
     </style>
 </head>
 <body>

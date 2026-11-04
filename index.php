@@ -576,6 +576,120 @@
                 padding: 0 3px;
             }
         }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        }
+
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom-color: rgba(23, 42, 58, .07);
+            background: rgba(251, 250, 246, .86);
+            backdrop-filter: saturate(180%) blur(18px);
+        }
+
+        .hero {
+            padding-top: 88px;
+            padding-bottom: 94px;
+        }
+
+        .hero-grid {
+            grid-template-columns: 1fr;
+            gap: 48px;
+            text-align: center;
+        }
+
+        .hero-grid > div:first-child {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .hero h1 {
+            max-width: 900px;
+            font-size: clamp(52px, 8vw, 88px);
+            line-height: 1.02;
+            letter-spacing: -.065em;
+        }
+
+        .hero-copy {
+            max-width: 600px;
+            font-size: 19px;
+        }
+
+        .hero-actions {
+            justify-content: center;
+        }
+
+        .hero-note {
+            margin-top: 17px;
+        }
+
+        .preview {
+            width: min(900px, 100%);
+            margin: 0 auto;
+            padding: 28px;
+            border-radius: 24px;
+            box-shadow: 0 30px 90px rgba(29, 55, 62, .13), 0 2px 8px rgba(29, 55, 62, .04);
+            transform: none;
+        }
+
+        .feature {
+            min-height: 220px;
+            padding: 30px;
+            border-radius: 21px;
+            box-shadow: 0 8px 26px rgba(29, 55, 62, .035);
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 38px rgba(29, 55, 62, .08);
+        }
+
+        .button {
+            min-height: 48px;
+            border-radius: 999px;
+        }
+
+        .closing {
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+        }
+
+        @media (max-width: 820px) {
+            .hero {
+                padding-top: 66px;
+                padding-bottom: 76px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding-top: 50px;
+                padding-bottom: 60px;
+            }
+
+            .hero h1 {
+                font-size: clamp(43px, 12vw, 60px);
+            }
+
+            .hero-copy {
+                font-size: 16px;
+            }
+
+            .preview {
+                padding: 18px 13px;
+                border-radius: 18px;
+            }
+
+            .feature {
+                min-height: 0;
+                padding: 23px;
+                border-radius: 18px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -694,7 +808,7 @@
                     <h2>Siap mengelola barang lebih baik?</h2>
                     <p>Masuk ke SIMBAR untuk mulai mengelola inventaris dan peminjaman.</p>
                 </div>
-                <a class="button" href="simbar/login.php">Masuk ke SIMBAR <span aria-hidden="true">&nbsp;→</span></a>
+                <a class="button" href="login.php">Masuk ke SIMBAR <span aria-hidden="true">&nbsp;→</span></a>
             </div>
         </section>
     </main>

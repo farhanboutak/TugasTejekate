@@ -132,6 +132,18 @@ if ($cari !== '') {
         .alert { margin-bottom:14px; padding:12px 14px; border:1px solid #f1caca; border-radius:10px; background:#fff3f2; color:#a43737; font-size:13px; }
         @media(max-width:700px) { .container{width:min(100% - 28px,1120px)} .topbar-inner{align-items:flex-start; flex-direction:column; padding:12px 0} .nav-links{width:100%; overflow:auto} .nav-links a{flex:0 0 auto; justify-content:center; padding:0 8px; white-space:nowrap} .heading{align-items:flex-start; flex-direction:column; padding:19px} .filters{grid-template-columns:1fr} .table-wrap{overflow:visible} table,tbody{display:block} thead{display:none} tr{display:grid; grid-template-columns:1fr 1fr; gap:4px; margin:10px; padding:9px; border:1px solid var(--line); border-radius:11px} td{display:block; min-width:0; padding:6px; border:0; overflow-wrap:anywhere} td:first-child{display:none} td:nth-child(3),td:nth-child(4){grid-column:1/-1} .summary{min-width:0} .pagination{align-items:flex-start; flex-direction:column} }
         @media(prefers-reduced-motion:reduce) { *,*::before,*::after{scroll-behavior:auto!important; transition-duration:.01ms!important} }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+        .topbar { border-bottom:1px solid var(--line); background:rgba(255,255,255,.88); color:var(--ink); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
+        .brand { color:var(--ink); }
+        .brand-mark { border-color:var(--line); background:var(--mint); color:var(--brand); }
+        .nav-links a,.logout { color:var(--muted); }
+        .nav-links a:hover,.nav-links a.active { border-color:var(--line); background:var(--mint); color:var(--brand-dark); }
+        .logout { border-color:var(--line); background:#fff; color:var(--brand); }
+        .heading { border:1px solid var(--line); border-radius:22px; background:linear-gradient(120deg,#f1f7f3,#fff 72%); }
+        .panel { border-radius:20px; box-shadow:0 16px 42px rgba(29,55,62,.055); }
+        input,select { border-radius:11px; }
+        th { background:#f7f8f7; }
+        @media(max-width:700px) { .topbar { backdrop-filter:none; } .heading { border-radius:18px; } }
     </style>
 </head>
 <body>

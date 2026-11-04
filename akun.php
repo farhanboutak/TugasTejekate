@@ -173,6 +173,21 @@ $csrf = $_SESSION['csrf_token'];
         .actions button:hover { background:var(--brand-dark); }
         :focus-visible { outline:3px solid rgba(20,107,104,.25); outline-offset:2px; }
         @media(max-width:600px) { .topbar-inner{min-height:60px;flex-wrap:wrap;padding:10px 0}.back{margin-left:auto} main{padding:28px 0}.card-header,form{padding:17px}.grid{grid-template-columns:1fr;gap:0}.actions{flex-direction:column-reverse}.actions a,.actions button{width:100%} }
+
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+        .topbar { border-bottom:1px solid var(--line); background:rgba(255,255,255,.86); color:var(--ink); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
+        .brand { color:var(--ink); }
+        .brand-mark { border-color:var(--line); background:var(--mint); color:var(--brand); }
+        .back { color:var(--brand); }
+        .back:hover { color:var(--brand-dark); }
+        .container { width:min(820px,calc(100% - 36px)); }
+        main { padding:52px 0; }
+        .card { border-radius:22px; box-shadow:0 18px 50px rgba(29,55,62,.07); }
+        .card-header { padding:22px 26px; }
+        form { padding:26px; }
+        input { border-radius:12px; background:#fcfdfc; }
+        .actions a,.actions button { min-height:46px; border-radius:999px; }
+        @media(max-width:600px) { main { padding:32px 0; } .card-header,form { padding:18px; } }
     </style>
 </head>
 <body>

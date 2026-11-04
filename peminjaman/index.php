@@ -683,6 +683,19 @@ $status_class = [
                 transition-duration: .01ms !important;
             }
         }
+
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+        .topbar { border-bottom:1px solid var(--line); background:rgba(255,255,255,.88); color:var(--ink); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
+        .brand { color:var(--ink); }
+        .brand-mark { border-color:var(--line); background:var(--mint); color:var(--brand); }
+        .topbar-user { color:var(--muted); }
+        .logout { border-color:var(--line); background:var(--mint); color:var(--brand-dark); }
+        .summary-card,.product-card,.panel,.updates { border-radius:20px; box-shadow:0 16px 42px rgba(29,55,62,.055); }
+        .product-card:hover { box-shadow:0 22px 48px rgba(29,55,62,.1); }
+        .product-image { background:#f5f7f6; }
+        .field input,.field select { border-radius:11px; }
+        th { background:#f7f8f7; }
+        @media (max-width:600px) { .topbar { backdrop-filter:none; } }
     </style>
 </head>
 <body>
