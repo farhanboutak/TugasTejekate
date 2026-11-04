@@ -98,12 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $pdo->beginTransaction();
+        $last_id_stmt = $pdo->query('SELECT id FROM peminjaman ORDER BY id DESC LIMIT 1 FOR UPDATE');
+        $next_peminjaman_id = (int)$last_id_stmt->fetchColumn() + 1;
 
         $insert = $pdo->prepare(
             "INSERT INTO peminjaman
-                (user_id, barang_id, tanggal_pinjam, tanggal_kembali, jumlah_pinjam, status)
+                (id, user_id, barang_id, tanggal_pinjam, tanggal_kembali, jumlah_pinjam, status)
              VALUES
-                (:user_id, :barang_id, :tanggal_pinjam, :tanggal_kembali, :jumlah_pinjam, 'Pending')"
+                (:id, :user_id, :barang_id, :tanggal_pinjam, :tanggal_kembali, :jumlah_pinjam, 'Pending')"
         );
         $validated_items = [];
         foreach ($items as $barang_id => $jumlah) {
@@ -137,6 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($validated_items as [$barang_id, $jumlah]) {
             $insert->execute([
+                ':id' => $next_peminjaman_id++,
                 ':user_id' => (int)$_SESSION['user_id'],
                 ':barang_id' => $barang_id,
                 ':tanggal_pinjam' => $tanggal_pinjam,
