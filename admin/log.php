@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin']);
+cek_akses('audit.view');
 
 function h($value): string
 {
@@ -130,6 +130,7 @@ if ($cari !== '') {
         .pagination-links { display:flex; gap:6px; }
         .pagination-links a { min-height:32px; display:grid; place-items:center; padding:0 10px; border:1px solid var(--line); border-radius:8px; background:white; color:var(--brand); font-weight:700; }
         .alert { margin-bottom:14px; padding:12px 14px; border:1px solid #f1caca; border-radius:10px; background:#fff3f2; color:#a43737; font-size:13px; }
+        @media(min-width:992px) { body{padding-left:250px} .topbar{position:fixed;inset:0 auto 0 0;z-index:1000;width:250px;height:100vh} .topbar-inner{width:100%;height:100%;align-items:stretch;justify-content:flex-start;flex-direction:column;padding:24px 18px} .nav-links{align-items:stretch;flex-direction:column;margin-top:28px} .nav-links a,.logout{justify-content:flex-start} .container{width:min(1120px,calc(100% - 40px))} }
         @media(max-width:700px) { .container{width:min(100% - 28px,1120px)} .topbar-inner{align-items:flex-start; flex-direction:column; padding:12px 0} .nav-links{width:100%; overflow:auto} .nav-links a{flex:0 0 auto; justify-content:center; padding:0 8px; white-space:nowrap} .heading{align-items:flex-start; flex-direction:column; padding:19px} .filters{grid-template-columns:1fr} .table-wrap{overflow:visible} table,tbody{display:block} thead{display:none} tr{display:grid; grid-template-columns:1fr 1fr; gap:4px; margin:10px; padding:9px; border:1px solid var(--line); border-radius:11px} td{display:block; min-width:0; padding:6px; border:0; overflow-wrap:anywhere} td:first-child{display:none} td:nth-child(3),td:nth-child(4){grid-column:1/-1} .summary{min-width:0} .pagination{align-items:flex-start; flex-direction:column} }
         @media(prefers-reduced-motion:reduce) { *,*::before,*::after{scroll-behavior:auto!important; transition-duration:.01ms!important} }
         body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
@@ -145,15 +146,20 @@ if ($cari !== '') {
         th { background:#f7f8f7; }
         @media(max-width:700px) { .topbar { backdrop-filter:none; } .heading { border-radius:18px; } }
     </style>
+    <?php require __DIR__ . '/sidebar_styles.php'; ?>
 </head>
 <body>
+<?php $admin_sidebar_active = 'log'; require __DIR__ . '/sidebar.php'; ?>
     <header class="topbar">
         <div class="topbar-inner container">
-            <a class="brand" href="index.php"><span class="brand-mark" aria-hidden="true"><i class="bi bi-box-seam"></i></span>SIMBAR <span style="font-weight:500;opacity:.72">/ Admin</span></a>
+            <a class="brand" href="log.php"><span class="brand-mark" aria-hidden="true"><i class="bi bi-box-seam"></i></span>SIMBAR <span style="font-weight:500;opacity:.72">/ Admin</span></a>
             <nav class="nav-links" aria-label="Navigasi admin">
-                <a href="index.php"><i class="bi bi-grid"></i> Dashboard</a>
-                <a href="barang.php"><i class="bi bi-box-seam"></i> Inventaris</a>
+                <?php if (simbar_user_has_permission('transactions.view')): ?><a href="index.php"><i class="bi bi-grid"></i> Dashboard</a><?php endif; ?>
+                <?php if (simbar_user_has_permission('inventory.manage')): ?><a href="barang.php"><i class="bi bi-box-seam"></i> Inventaris</a><?php endif; ?>
+                <?php if (simbar_user_has_permission('users.manage')): ?>
                 <a href="pengguna.php"><i class="bi bi-people"></i> Pengguna</a>
+                <a href="peran.php"><i class="bi bi-shield-lock"></i> Role &amp; izin</a>
+                <?php endif; ?>
                 <a class="active" href="log.php" aria-current="page"><i class="bi bi-clock-history"></i> Log aktivitas</a>
                 <a href="../akun.php"><i class="bi bi-person-gear"></i> Profil</a>
                 <a class="logout" href="../logout.php"><i class="bi bi-box-arrow-right"></i> Keluar</a>

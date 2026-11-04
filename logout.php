@@ -1,8 +1,9 @@
 <?php
 require_once 'config/koneksi.php';
 require_once 'config/audit.php';
+require_once 'config/auth.php';
 
-if (in_array($_SESSION['role'] ?? '', ['admin', 'petugas'], true)) {
+if (simbar_role_has_any_permission($pdo, (string)($_SESSION['role'] ?? ''), ['transactions.manage', 'users.manage', 'audit.view'])) {
     try {
         catat_aktivitas($pdo, 'logout', 'auth', 'Pengguna keluar dari SIMBAR.');
     } catch (PDOException $e) {

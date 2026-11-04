@@ -2,8 +2,9 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 require_once '../config/audit.php';
+require_once '../config/users.php';
 
-cek_akses(['admin']);
+cek_akses('users.manage');
 
 function kembali_ke_pengguna($pesan)
 {
@@ -26,7 +27,6 @@ if (
 }
 
 $aksi = isset($_POST['aksi']) && is_string($_POST['aksi']) ? $_POST['aksi'] : '';
-$roles = ['admin', 'petugas', 'peminjam'];
 
 try {
     if ($aksi === 'tambah' || $aksi === 'ubah') {
@@ -35,11 +35,15 @@ try {
         $role = isset($_POST['role']) && is_string($_POST['role']) ? $_POST['role'] : '';
         $password = isset($_POST['password']) && is_string($_POST['password']) ? $_POST['password'] : '';
 
+        $role_stmt = $pdo->prepare('SELECT role_key FROM roles WHERE role_key = :role LIMIT 1');
+        $role_stmt->execute([':role' => $role]);
+        $role_exists = (bool)$role_stmt->fetchColumn();
+
         if (
             $nama === '' ||
             mb_strlen($nama, 'UTF-8') > 100 ||
             preg_match('/\A[A-Za-z0-9._-]{3,50}\z/', $username) !== 1 ||
-            !in_array($role, $roles, true)
+            !$role_exists
         ) {
             kembali_ke_pengguna('invalid');
         }
@@ -53,6 +57,10 @@ try {
         }
 
         if ($aksi === 'tambah') {
+            if (simbar_username_in_use($pdo, $username)) {
+                kembali_ke_pengguna('username_terpakai');
+            }
+
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
             if ($password_hash === false) {
                 error_log('SIMBAR: Password hashing failed while creating a user.');
@@ -60,17 +68,18 @@ try {
             }
 
             $pdo->beginTransaction();
+            $id_baru = simbar_next_user_id($pdo);
             $stmt = $pdo->prepare(
-                'INSERT INTO users (nama, username, password, role)
-                 VALUES (:nama, :username, :password, :role)'
+                'INSERT INTO users (id, nama, username, password, role)
+                 VALUES (:id, :nama, :username, :password, :role)'
             );
             $stmt->execute([
+                ':id' => $id_baru,
                 ':nama' => $nama,
                 ':username' => $username,
                 ':password' => $password_hash,
                 ':role' => $role,
             ]);
-            $id_baru = (int)$pdo->lastInsertId();
             catat_aktivitas(
                 $pdo,
                 'pengguna.ditambahkan',
@@ -88,6 +97,9 @@ try {
         if ($id <= 0) {
             kembali_ke_pengguna('invalid');
         }
+        if (simbar_username_in_use($pdo, $username, $id)) {
+            kembali_ke_pengguna('username_terpakai');
+        }
 
         $pdo->beginTransaction();
         $stmt = $pdo->prepare('SELECT id, nama, username, role FROM users WHERE id = :id FOR UPDATE');
@@ -98,7 +110,10 @@ try {
             kembali_ke_pengguna('tidak_ada');
         }
 
-        if ($id === (int)$_SESSION['user_id'] && $role !== 'admin') {
+        if (
+            $id === (int)$_SESSION['user_id'] &&
+            !simbar_role_has_permission($pdo, $role, 'users.manage')
+        ) {
             $pdo->rollBack();
             kembali_ke_pengguna('role_ditolak');
         }
@@ -222,12 +237,12 @@ try {
     }
 
     kembali_ke_pengguna('invalid');
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
 
-    if ($e->getCode() === '23000') {
+    if ($e instanceof PDOException && simbar_is_duplicate_username($e)) {
         kembali_ke_pengguna('username_terpakai');
     }
 

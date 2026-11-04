@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['petugas']);
+cek_akses('transactions.view');
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -649,8 +649,21 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
         .filters input,.filters select { border-radius:11px; }
         @media (max-width:680px) { .topbar { backdrop-filter:none; } }
     </style>
+    <style>
+        @media (min-width: 992px) {
+            body { padding-left: 250px; }
+            .topbar { position: fixed; inset: 0 auto 0 0; z-index: 1000; width: 250px; height: 100vh; }
+            .topbar-inner { width: 100%; height: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column; padding: 24px 18px; }
+            .topbar-user { align-items: stretch; flex-direction: column; gap: 12px; margin-top: 28px; }
+            .nav-links { align-items: stretch; flex-direction: column; }
+            .nav-links a,.logout { justify-content: flex-start; }
+            .container { width: min(1120px, calc(100% - 40px)); }
+        }
+    </style>
+    <?php require __DIR__ . '/../admin/sidebar_styles.php'; ?>
 </head>
 <body>
+<?php $admin_sidebar_active = 'dashboard'; require __DIR__ . '/../admin/sidebar.php'; ?>
     <header class="topbar">
         <div class="topbar-inner container">
             <a class="brand" href="index.php" aria-label="SIMBAR, dashboard petugas">
@@ -665,7 +678,7 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
             <div class="topbar-user">
                 <span class="user-name">Halo, <?= h($_SESSION['nama'] ?? 'Petugas') ?></span>
                 <nav class="nav-links" aria-label="Navigasi petugas">
-                    <a href="../admin/barang.php" aria-label="Inventaris"><span aria-hidden="true">▦</span><span class="nav-label">&nbsp; Inventaris</span></a>
+                    <?php if (simbar_user_has_permission('inventory.manage')): ?><a href="../admin/barang.php" aria-label="Inventaris"><span aria-hidden="true">▦</span><span class="nav-label">&nbsp; Inventaris</span></a><?php endif; ?>
                     <a href="../akun.php" aria-label="Profil"><span aria-hidden="true">◉</span><span class="nav-label">&nbsp; Profil</span></a>
                 </nav>
                 <a class="logout" href="../logout.php">Keluar</a>
@@ -733,7 +746,7 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                 </select>
                 <input type="date" id="dateFrom" aria-label="Tanggal pinjam dari" title="Tanggal pinjam dari">
                 <input type="date" id="dateTo" aria-label="Tanggal pinjam sampai" title="Tanggal pinjam sampai">
-                <a class="refresh export-link" href="../admin/ekspor_peminjaman.php" id="exportLink">Ekspor CSV</a>
+                <?php if (simbar_user_has_permission('transactions.export')): ?><a class="refresh export-link" href="../admin/ekspor_peminjaman.php" id="exportLink">Ekspor CSV</a><?php endif; ?>
                 <a class="refresh" href="index.php">Muat ulang</a>
             </div>
 
@@ -779,7 +792,9 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                                     <td data-label="Status"><span class="status <?= h($status_css) ?>"><?= h($status) ?></span></td>
                                     <td data-label="Aksi">
                                         <div class="actions">
-                                            <?php if ($status === 'Pending'): ?>
+                                            <?php if (!simbar_user_has_permission('transactions.manage')): ?>
+                                                <span class="date-subtitle">Lihat saja</span>
+                                            <?php elseif ($status === 'Pending'): ?>
                                                 <button class="action-button approve" type="button" title="Setujui pengajuan"
                                                     data-action-status="Disetujui" data-action-label="menyetujui"
                                                     data-id="<?= (int)$transaksi['id'] ?>"
@@ -870,7 +885,9 @@ $pesan_info = $pesan_map[$pesan_key] ?? null;
                 if (from) params.set('dari', from);
                 if (to) params.set('sampai', to);
                 const queryString = params.toString();
-                exportLink.href = '../admin/ekspor_peminjaman.php' + (queryString ? '?' + queryString : '');
+                if (exportLink) {
+                    exportLink.href = '../admin/ekspor_peminjaman.php' + (queryString ? '?' + queryString : '');
+                }
             }
 
             search.addEventListener('input', applyFilters);

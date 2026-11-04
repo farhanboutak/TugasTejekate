@@ -90,6 +90,10 @@ Pastikan XAMPP (Apache dan MySQL) sudah terpasang dan berjalan.
 
    Untuk database lama, jalankan [`database/migrasi_audit_log.sql`](database/migrasi_audit_log.sql) satu kali untuk membuat tabel jejak aktivitas admin.
 
+   Jika pembuatan akun menampilkan username sudah digunakan padahal username baru, periksa `users.id`. Jalankan [`database/migrasi_users_auto_increment.sql`](database/migrasi_users_auto_increment.sql) satu kali bila kolom tersebut belum memakai `AUTO_INCREMENT`.
+
+   Untuk role dan izin akses dinamis, jalankan [`database/migrasi_role_dinamis.sql`](database/migrasi_role_dinamis.sql) satu kali. Role bawaan dipertahankan; admin dapat membuat role baru dan memilih izin modulnya dari halaman Pengguna → Role & izin.
+
 4. **Periksa koneksi database** di [`config/koneksi.php`](config/koneksi.php). Sesuaikan host, nama database, username, dan password dengan konfigurasi lokalmu.
 
 5. **Buka aplikasi** di browser:

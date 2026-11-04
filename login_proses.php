@@ -1,6 +1,7 @@
 <?php
 require_once 'config/koneksi.php';
 require_once 'config/audit.php';
+require_once 'config/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: login.php');
@@ -34,7 +35,7 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user || !password_verify($password, $user['password'])) {
-        if ($user && in_array($user['role'], ['admin', 'petugas'], true)) {
+        if ($user && simbar_role_has_any_permission($pdo, (string)$user['role'], ['transactions.manage', 'users.manage', 'audit.view'])) {
             try {
                 catat_aktivitas($pdo, 'login.gagal', 'auth', 'Percobaan login gagal untuk akun staf.', null, [], [
                     'id' => null,
@@ -55,7 +56,7 @@ try {
         remember_clear_cookie($pdo);
     }
 
-    if (in_array($user['role'], ['admin', 'petugas'], true)) {
+    if (simbar_role_has_any_permission($pdo, (string)$user['role'], ['transactions.manage', 'users.manage', 'audit.view'])) {
         try {
             catat_aktivitas($pdo, 'login.berhasil', 'auth', 'Pengguna berhasil masuk.', (int)$user['id'], [], [
                 'id' => (int)$user['id'],
@@ -74,12 +75,8 @@ try {
     $_SESSION['role'] = $user['role'];
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-    $destinations = [
-        'admin' => 'admin/index.php',
-        'petugas' => 'petugas/index.php',
-        'peminjam' => 'peminjaman/index.php',
-    ];
-    if (!isset($destinations[$user['role']])) {
+    $destination = simbar_dashboard_url($pdo, (string)$user['role']);
+    if ($destination === 'login.php') {
         session_unset();
         session_destroy();
         error_log('SIMBAR login failed: unsupported role for user ID ' . (int)$user['id']);
@@ -87,7 +84,7 @@ try {
         exit;
     }
 
-    header('Location: ' . $destinations[$user['role']]);
+    header('Location: ' . $destination);
     exit;
 } catch (PDOException $e) {
     error_log('SIMBAR login failed: ' . $e->getMessage());

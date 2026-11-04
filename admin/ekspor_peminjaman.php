@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin', 'petugas']);
+cek_akses('transactions.export');
 
 function filter_tanggal($value)
 {

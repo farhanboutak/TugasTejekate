@@ -2,7 +2,7 @@
 require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 
-cek_akses(['admin', 'petugas']);
+cek_akses('inventory.manage');
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -72,7 +72,7 @@ try {
 }
 
 $csrf = $_SESSION['csrf_token'];
-$dashboard_url = $_SESSION['role'] === 'admin' ? 'index.php' : '../petugas/index.php';
+$dashboard_url = '../' . simbar_dashboard_url($pdo, (string)$_SESSION['role']);
 $total_stok = 0;
 $total_tersedia = 0;
 $stok_menipis = 0;
@@ -280,6 +280,7 @@ foreach ($semua_barang as $barang) {
             .inventory-card { display: grid; grid-template-columns: minmax(105px, .75fr) minmax(0, 1.25fr); }
             .inventory-photo { height: 100%; min-height: 100%; aspect-ratio: auto; }
         }
+<<<<<<< HEAD
 
         body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
         .topbar { border-bottom:1px solid var(--line); background:rgba(255,255,255,.88); color:var(--ink); box-shadow:none; backdrop-filter:saturate(180%) blur(18px); }
@@ -295,9 +296,22 @@ foreach ($semua_barang as $barang) {
         .inventory-photo { background:#f5f7f6; }
         input,select { border-radius:11px; }
         @media (max-width:600px) { .topbar { backdrop-filter:none; } .heading { border-radius:18px; } }
+=======
+        @media (min-width: 992px) {
+            body { padding-left: 250px; }
+            .topbar { position: fixed; inset: 0 auto 0 0; z-index: 1000; width: 250px; height: 100vh; }
+            .topbar-inner { width: 100%; height: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column; padding: 24px 18px; }
+            .top-actions { align-items: stretch; flex-direction: column; margin-top: 28px; }
+            .top-actions > span { margin: 0 0 12px; color: rgba(255,255,255,.82); }
+            .top-actions a { justify-content: flex-start; }
+            main.container { width: min(1120px, calc(100% - 40px)); }
+        }
+>>>>>>> 1435e10d00ccd352d7cfc0aa30bc98ec90c9598a
     </style>
+<?php if (simbar_user_has_any_permission(['transactions.view', 'inventory.manage', 'users.manage', 'audit.view'])) { require __DIR__ . '/sidebar_styles.php'; } ?>
 </head>
 <body>
+<?php if (simbar_user_has_any_permission(['transactions.view', 'inventory.manage', 'users.manage', 'audit.view'])) { $admin_sidebar_active = 'inventory'; require __DIR__ . '/sidebar.php'; } ?>
     <header class="topbar">
         <div class="topbar-inner container">
             <a class="brand" href="<?= h($dashboard_url) ?>" aria-label="SIMBAR, kembali ke dashboard">
@@ -314,8 +328,11 @@ foreach ($semua_barang as $barang) {
                 <span><?= h($_SESSION['nama'] ?? 'Pengguna') ?></span>
                 <a href="<?= h($dashboard_url) ?>">Dashboard</a>
                 <a href="barang.php" aria-current="page">Inventaris</a>
-                <?php if ($_SESSION['role'] === 'admin'): ?>
+                <?php if (simbar_user_has_permission('users.manage')): ?>
                     <a href="pengguna.php">Pengguna</a>
+                    <a href="peran.php">Role</a>
+                <?php endif; ?>
+                <?php if (simbar_user_has_permission('audit.view')): ?>
                     <a href="log.php">Log aktivitas</a>
                 <?php endif; ?>
                 <a href="../logout.php">Keluar</a>

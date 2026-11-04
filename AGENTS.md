@@ -23,33 +23,34 @@ SIMBAR adalah aplikasi web sederhana untuk mengelola inventaris barang dan trans
 - `register_proses.php`: validasi dan pembuatan akun baru dengan role tetap `peminjam`, password hash `password_hash()`, dan perlindungan CSRF.
 - `peminjaman/index.php`: halaman khusus role `peminjam` untuk mengirim pengajuan peminjaman berstatus `Pending` dan melihat riwayat akun. Pengajuan memeriksa stok yang tersedia setelah mengurangi jumlah transaksi berstatus `Pending` atau `Disetujui`.
 - `peminjaman/index.php` juga menampilkan pembaruan status terkini dari transaksi peminjam serta menyediakan tautan profil akun.
-- `petugas/index.php`: dashboard role `petugas` untuk mencari/filter semua transaksi serta menyetujui, menolak, atau menandai transaksi disetujui sebagai dikembalikan.
+- `petugas/index.php`: dashboard untuk role dengan izin `transactions.view`; perubahan status memerlukan `transactions.manage`.
 - `admin/barang.php` dan `admin/barang_aksi.php`: pengelolaan inventaris untuk admin/petugas; stok tidak boleh dikurangi di bawah jumlah transaksi Pending/Disetujui, barang dapat diarsipkan atau dipulihkan tanpa menghapus transaksi/foto, dan foto barang dapat diunggah atau diganti. Daftar katalog peminjaman hanya menampilkan barang aktif.
 - Foto inventaris disimpan di `uploads/barang/` dengan nama acak; hanya JPG, PNG, dan WebP hingga 5 MB yang diterima. Form admin menampilkan pratinjau dan dapat mengambil foto dari perangkat atau URL HTTPS publik langsung ke file gambar; URL diunduh pada server dengan pembatasan alamat publik, tanpa redirect, lalu divalidasi sebagai gambar. Pengguna melihat foto pada katalog di `peminjaman/index.php`.
 - `admin/ekspor_peminjaman.php`: ekspor CSV transaksi dengan filter status, rentang tanggal pinjam, dan pencarian; nilai teks CSV dinetralkan agar tidak dieksekusi sebagai formula spreadsheet.
 - `admin/aksi_status.php`: endpoint POST perubahan status yang digunakan admin maupun petugas; validasi transisi status dan CSRF, lalu kembali ke dashboard sesuai role.
-- `admin/hapus.php`: endpoint hapus transaksi admin-only dengan metode POST dan CSRF.
-- `admin/pengguna.php`: halaman admin untuk membuat, melihat, mengubah nama/username/role, mereset password, dan menghapus akun yang tidak memiliki transaksi.
-- `admin/pengguna_aksi.php`: endpoint POST pengelolaan akun; akses admin-only, CSRF, validasi input, hash password, dan perlindungan akun admin terakhir.
-- `admin/log.php`: halaman admin-only untuk mencari dan memfilter jejak login staf serta perubahan transaksi, barang, dan pengguna.
+- `admin/hapus.php`: endpoint POST hapus transaksi dengan CSRF dan izin `transactions.delete`.
+- `admin/pengguna.php` dan `admin/pengguna_aksi.php`: pengelolaan akun dengan izin `users.manage`, validasi input, hash password, dan perlindungan akun admin terakhir.
+- `admin/peran.php` dan `admin/peran_aksi.php`: membuat role serta mengubah label dan izin modulnya; role yang sedang dipakai tidak dihapus.
+- `admin/log.php`: halaman pencarian jejak aktivitas dengan izin `audit.view`.
 - `config/audit.php`: menulis log aktivitas dengan snapshot nama/role pelaku, metadata perubahan non-rahasia, alamat IP, dan waktu; jangan pernah memasukkan password atau token ke metadata.
 - `akun.php`: profil bersama semua role untuk memperbarui nama/username dan opsional password; perubahan memerlukan password saat ini.
 - `config/koneksi.php`: membuat koneksi PDO, memulai session dengan cookie yang aman, lalu memulihkan login dari token ingat saya bila session sudah berakhir.
-- `config/auth.php`: fungsi `cek_akses($allowed_roles)` untuk memeriksa session login dan role.
+- `config/auth.php`: katalog capability dan pemeriksaan `cek_akses($permission)` berdasarkan tabel role; izin utama mencakup transaksi, inventaris, pengguna/role, log, dan peminjaman.
 - `admin/index.php`: dashboard admin dengan ringkasan, filter transaksi responsif, tautan pengelolaan, aktivitas terbaru, dan thumbnail foto barang.
 - `logout.php`: mencabut token ingat saya pada perangkat tersebut, menghapus session, dan mengarahkan user kembali ke halaman login.
 - `update_password.php`: skrip utilitas yang langsung mengubah password admin; jangan menjalankannya tanpa persetujuan eksplisit dan jangan mengeksposnya sebagai endpoint publik.
-- `database/db_simbar.sql`: definisi dan data awal untuk tabel `users`, `barang`, `peminjaman`, `remember_tokens`, dan `audit_logs`. Database lama perlu menjalankan migrasi `database/migrasi_ingat_saya.sql` dan `database/migrasi_audit_log.sql` satu kali jika tabel terkait belum tersedia.
+- `database/db_simbar.sql`: definisi dan data awal untuk tabel `users`, `roles`, `barang`, `peminjaman`, `remember_tokens`, dan `audit_logs`. Database lama perlu menjalankan migrasi terkait, termasuk `database/migrasi_role_dinamis.sql`, satu kali.
 
 Skema utama:
 
-- `users`: nama, username, hash password, dan role (`admin`, `petugas`, `peminjam`).
+- `users`: nama, username, hash password, dan `role_key` dari tabel `roles`.
+- `roles`: label role dan daftar izin capability dalam JSON; registrasi publik tetap membuat akun dengan role bawaan `peminjam`.
 - `barang`: nama barang, kategori, foto opsional, status arsip (`diarsipkan`), stok, dan kondisi.
 - `peminjaman`: peminjam, barang, tanggal pinjam/kembali, jumlah, dan status (`Pending`, `Disetujui`, `Ditolak`, `Dikembalikan`).
 
 ## Status Implementasi yang Perlu Diingat
 
-- `config/auth.php` menyediakan pemeriksaan role, tetapi halaman yang mengelola data tetap perlu memanggilnya secara eksplisit; jangan mengasumsikan halaman otomatis terlindungi.
+- Setiap halaman dan endpoint yang mengelola data tetap harus memanggil `cek_akses()` dengan capability yang sesuai; jangan mengasumsikan halaman otomatis terlindungi.
 - Ringkasan angka dan contoh transaksi pada landing page adalah konten tampilan, bukan data yang diambil dari database.
 - Dashboard admin, petugas, peminjam, pengguna, dan inventaris harus tetap nyaman digunakan di layar ponsel; tabel besar sebaiknya berubah menjadi kartu ringkas, bukan memaksa seluruh halaman melebar.
 - Jangan mengarang struktur tabel atau fitur CRUD lain; periksa implementasi dan dump SQL sebelum mengubah alur data.

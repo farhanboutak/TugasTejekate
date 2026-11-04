@@ -3,7 +3,7 @@ require_once '../config/koneksi.php';
 require_once '../config/auth.php';
 require_once '../config/audit.php';
 
-cek_akses(['admin']);
+cek_akses('transactions.delete');
 
 function kembali_ke_dashboard($pesan)
 {
